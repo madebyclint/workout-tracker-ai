@@ -1,0 +1,21 @@
+{
+  "currentWeek": "2026-W14",
+  "currentProgram": "workouts/2026-W14-program.md",
+  "currentSession": "workouts/2026-W14-session.md",
+  "currentLog": "logs/2026-W14-log.json",
+  "exerciseReference": "exercises/reference.md",
+  "historyLog": "logs/history.md",
+  "programsIndex": "workouts/index.json",
+  "programCycle": ["A", "B", "C", "D"],
+  "currentCycleWeek": "A",
+  "cycleLabels": {
+    "A": "Upper Push + Core",
+    "B": "Lower Body + Core",
+    "C": "Upper Pull + Core",
+    "D": "Full Body Compound + Core"
+  },
+  "athletes": {
+    "clint": { "name": "Clint", "height": "5'7\"", "weight": 205 },
+    "wife": { "name": "Wife", "height": "5'3\"", "weight": 110 }
+  }
+}

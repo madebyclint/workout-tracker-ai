@@ -1,0 +1,16 @@
+{
+  "week": "2026-W14",
+  "date": "2026-04-06",
+  "cycle": "A",
+  "label": "Upper Push + Core",
+  "athletes": {
+    "clint": {
+      "bodyweight": 205,
+      "exercises": []
+    },
+    "wife": {
+      "bodyweight": 110,
+      "exercises": []
+    }
+  }
+}

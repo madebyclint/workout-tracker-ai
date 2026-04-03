@@ -1,0 +1,13 @@
+{
+  "weeks": [
+    {
+      "week": "2026-W14",
+      "date": "2026-04-06",
+      "cycle": "A",
+      "label": "Upper Push + Core",
+      "program": "workouts/2026-W14-program.md",
+      "session": "workouts/2026-W14-session.md",
+      "log": "logs/2026-W14-log.json"
+    }
+  ]
+}
