@@ -439,7 +439,7 @@
 
 <header>
   <div class="header-top">
-    <h1>Workout Tracker</h1>
+    <h1 style="cursor:pointer" onclick="window.location.href='/'">Workout Tracker</h1>
     <span class="cycle-badge" id="headerCycleBadge">Week —</span>
   </div>
   <div class="header-meta" id="headerMeta">Loading…</div>
@@ -494,7 +494,7 @@ let _programText = '';
 let _referenceText = '';
 let _archiveLoaded = false;
 let _logLoaded = false;
-let _sessionState = { athlete: 'clint', exercises: {} }; // exercises: { "ExName": "complete" | "partial" | "skip" | "" }
+let _sessionState = { exercises: {} }; // exercises: { "ExName": "complete" | "partial" | "skip" | "" }
 let _parsedProgram = null; // parsed exercise data
 let _charts = {};
 
@@ -767,8 +767,6 @@ function renderSession() {
   const doneCount = allExNames.filter(n => exs[n] === 'complete' || exs[n] === 'partial').length;
   const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
-  const athlete = _sessionState.athlete || 'clint';
-
   let html = `
     <div class="session-bar">
       <div class="progress-wrap">
@@ -778,10 +776,6 @@ function renderSession() {
     </div>
 
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
-      <div class="athlete-toggle" style="margin-bottom:0">
-        <button class="athlete-btn ${athlete === 'clint' ? 'active' : ''}" onclick="setAthlete('clint')">Clint</button>
-        <button class="athlete-btn ${athlete === 'wife' ? 'active' : ''}" onclick="setAthlete('wife')">Wife</button>
-      </div>
       <button class="complete-workout-btn" onclick="completeWorkout()">Complete All</button>
       <button class="share-btn" onclick="shareSession()">Share</button>
     </div>
@@ -792,25 +786,27 @@ function renderSession() {
 
     for (const ex of block.exercises) {
       const status = exs[ex.name] || '';
-      const scaling = athlete === 'clint' ? ex.scaling.clint : ex.scaling.wife;
+      const exKey = escAttr(ex.name);
+      const nextComplete = status === 'complete' ? '' : 'complete';
+      const nextPartial  = status === 'partial'  ? '' : 'partial';
+      const nextSkip     = status === 'skip'      ? '' : 'skip';
 
       html += `<div class="exercise-status-card ${status}">
         <div class="ex-status-header">
           <span class="ex-status-name">${ex.name}</span>
           <span class="ex-status-scheme">${ex.scheme}</span>
         </div>
-        ${scaling ? `<div class="ex-status-scaling">${scaling}</div>` : ''}
         <div class="ex-status-btns">
           <button class="ex-btn ex-btn-complete${status === 'complete' ? ' active' : ''}"
-            onclick="setExerciseStatus('${escAttr(ex.name)}', ${status === 'complete' ? "''" : "'complete'"})">
+            onclick="setExerciseStatus('${exKey}', '${nextComplete}')">
             ✓ Done
           </button>
           <button class="ex-btn ex-btn-partial${status === 'partial' ? ' active' : ''}"
-            onclick="setExerciseStatus('${escAttr(ex.name)}', ${status === 'partial' ? "''" : "'partial'"})">
+            onclick="setExerciseStatus('${exKey}', '${nextPartial}')">
             ◑ Partial
           </button>
           <button class="ex-btn ex-btn-skip${status === 'skip' ? ' active' : ''}"
-            onclick="setExerciseStatus('${escAttr(ex.name)}', ${status === 'skip' ? "''" : "'skip'"})">
+            onclick="setExerciseStatus('${exKey}', '${nextSkip}')">
             ✗ Skip
           </button>
         </div>
@@ -820,6 +816,7 @@ function renderSession() {
 
   document.getElementById('sessionContent').innerHTML = html;
 }
+
 
 function escAttr(s) {
   return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
@@ -845,12 +842,6 @@ function completeWorkout() {
   saveSessionToURL();
   renderSession();
   showToast('Workout marked complete!');
-}
-
-function setAthlete(who) {
-  _sessionState.athlete = who;
-  saveSessionToURL();
-  renderSession();
 }
 
 function shareSession() {
@@ -1034,7 +1025,6 @@ function showToast(msg) {
 function saveSessionToLog() {
   if (!_manifest || !_parsedProgram) return;
 
-  const athlete = _sessionState.athlete;
   const exercises = [];
 
   for (const block of _parsedProgram) {
@@ -1049,10 +1039,7 @@ function saveSessionToLog() {
     date: new Date().toISOString().split('T')[0],
     cycle: _manifest.currentCycleWeek,
     label: _manifest.cycleLabels[_manifest.currentCycleWeek],
-    athletes: {
-      clint: { bodyweight: _manifest.athletes?.clint?.weight || 0, exercises: athlete === 'clint' ? exercises : [] },
-      wife:  { bodyweight: _manifest.athletes?.wife?.weight || 0,  exercises: athlete === 'wife'  ? exercises : [] }
-    }
+    exercises
   };
 
   const blob = new Blob([JSON.stringify(logData, null, 2)], { type: 'application/json' });
