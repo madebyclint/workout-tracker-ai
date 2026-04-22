@@ -35,6 +35,12 @@ function parseProgram(md) {
       continue;
     }
 
+    const weightMatch = line.match(/^- \*\*Weight\*\*: (.+)/);
+    if (weightMatch) {
+      currentExercise.scaling.clint = weightMatch[1].trim();
+      continue;
+    }
+
     if (line.startsWith('- ') && !line.includes('**Target') && !line.includes('**Clint')) {
       currentExercise.notes += (currentExercise.notes ? ' ' : '') + line.slice(2);
     }
@@ -85,10 +91,9 @@ function renderProgram(md) {
         const tags = ex.muscles.split(',').map(m => m.trim());
         html += `<div style="margin-bottom:6px">${tags.map(t => `<span class="muscle-tag">${t}</span>`).join('')}</div>`;
       }
-      if (ex.scaling.clint || ex.scaling.wife) {
+      if (ex.scaling.clint) {
         html += `<div class="exercise-scaling">
-          <strong style="color:var(--text)">Clint:</strong> ${ex.scaling.clint}<br>
-          <strong style="color:var(--text)">Wife:</strong> ${ex.scaling.wife}
+          <strong style="color:var(--text)">Weight:</strong> ${ex.scaling.clint}
         </div>`;
       }
       if (ex.notes) html += `<div class="exercise-notes">${ex.notes}</div>`;

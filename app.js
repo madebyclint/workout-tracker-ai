@@ -36,7 +36,7 @@ async function boot() {
     const cycleKey = _manifest.currentCycleWeek;
     document.getElementById('headerCycleBadge').textContent = `Week ${cycleKey}`;
     document.getElementById('headerMeta').textContent =
-      `${_manifest.currentWeek} · ${_manifest.cycleLabels?.[cycleKey] || ''} · ${_manifest.athletes?.clint?.name || 'Clint'} & ${_manifest.athletes?.wife?.name || 'Wife'}`;
+      `${_manifest.currentWeek} · ${_manifest.cycleLabels?.[cycleKey] || ''}`;
 
     const [programMd, refMd] = await Promise.all([
       fetchText(_manifest.currentProgram),

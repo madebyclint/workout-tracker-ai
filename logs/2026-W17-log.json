@@ -1,0 +1,16 @@
+{
+  "week": "2026-W17",
+  "date": "2026-04-20",
+  "cycle": "B",
+  "label": "Lower Body + Core",
+  "athletes": {
+    "clint": {
+      "bodyweight": 205,
+      "exercises": []
+    },
+    "wife": {
+      "bodyweight": 110,
+      "exercises": []
+    }
+  }
+}

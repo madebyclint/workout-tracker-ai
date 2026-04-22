@@ -1,62 +1,57 @@
-# Week C — Upper Pull + Core
-**Cycle**: C of 4 | **Est. Time**: 35–40 min
-**Focus**: Back · Biceps · Rear Delts · Core
+# Week C — Full Body: Unilateral + Hinge + Press
+**Cycle**: C of 4 | **Est. Time**: 40–45 min
+**Focus**: Single-Leg Stability · Hamstrings · Upper Chest · Lats · Core
 
-> Rest 60–90 seconds between sets. Pull exercises complement bouldering directly.
+> Unilateral (single-limb) work exposes and corrects left/right imbalances — critical for injury prevention.
+> Rest 45–60 seconds between sets.
 
 ---
 
-## Block 1 — Pull (20–22 min)
+## Block 1 — Strength (25–28 min)
 
-### 1. Lat Pulldown `3 × 12–15`
+### 1. Walking Lunges `3 × 12 each leg`
+- **Target muscles**: Quads, glutes, hip flexors
+- **Weight**: 30–40 lbs total (2 DBs)
+- Long stride. Front knee tracks over toes. Stay tall.
+
+### 2. Single-Arm Dumbbell Row `3 × 12 each side`
+- **Target muscles**: Lats, rhomboids, rear delts, biceps
+- **Weight**: 45–55 lb DB
+- Support free hand on bench. Full stretch at bottom, full contraction at top.
+
+### 3. Incline Dumbbell Press `3 × 12`
+- **Target muscles**: Upper chest, front delts, triceps
+- **Weight**: 60–70 lbs total (2 DBs)
+- 30–45° incline. Control the descent. 3-second eccentric.
+
+### 4. Single-Leg Romanian Deadlift `3 × 10 each leg`
+- **Target muscles**: Hamstrings, glutes, balance
+- **Weight**: 25–35 lb DB (one hand, opposite side)
+- Slow and controlled. Massive balance and hip stability benefit.
+
+### 5. Lat Pulldown (Cable) `3 × 12`
 - **Target muscles**: Lats, biceps
-- **Clint**: 100–130 lbs | **Wife**: 40–60 lbs
-- Wide or neutral grip. Full stretch at top. Pull to upper chest.
-
-### 2. Seated Cable Row `3 × 12–15`
-- **Target muscles**: Mid back, lats, biceps
-- **Clint**: 80–100 lbs | **Wife**: 35–50 lbs
-- Sit tall. Squeeze shoulder blades at end. Keep chest open.
-
-### 3. Single-Arm Dumbbell Row `3 × 12–15 each side`
-- **Target muscles**: Lats, mid back, biceps
-- **Clint**: 50–65 lbs | **Wife**: 20–30 lbs
-- Support free hand on bench. Full range of motion.
-
-### 4. Face Pulls (Cable Rope) `3 × 15–20`
-- **Target muscles**: Rear delts, rotator cuff, upper traps
-- **Clint**: 30–40 lbs | **Wife**: 12–18 lbs
-- Set at face height. Pull to ears, elbows high. Vital for shoulder health.
-
-### 5. Hammer Curl `3 × 12–15`
-- **Target muscles**: Brachialis, biceps, forearms
-- **Clint**: 35–45 lbs total | **Wife**: 15–20 lbs total
-- Neutral grip. Don't swing. Transfers directly to bouldering grip.
+- **Weight**: 80–100 lbs
+- Full overhead stretch. Pull to upper chest.
 
 ---
 
 ## Block 2 — Core (12–15 min)
 
-### 6. Dead Bug `3 × 10 each side`
-- Slow. Lower back on floor the entire time.
+### 6. Bird Dog `3 × 10 each side`
+- Opposite arm and leg extend. Hold 2 seconds at top. No hip rotation.
 
-### 7. Cable Woodchop (Low to High) `3 × 12 each side`
-- **Clint**: 25–35 lbs | **Wife**: 8–12 lbs
-- Opposite direction from Week A. Hits obliques differently.
+### 7. Hollow Body Hold `3 × 25 sec`
+- Arms overhead, legs low. Lower back pressed to floor.
 
 ### 8. Pallof Press `3 × 12 each side`
-- **Clint**: 30–40 lbs | **Wife**: 10–15 lbs
-
-### 9. Hanging Leg Raise (straight legs) `3 × 10–12`
-- Straight legs are significantly harder than knee raises.
-
-### 10. Russian Twist `3 × 15 each side`
-- **Clint**: 25–35 lb plate | **Wife**: 8–15 lb plate
-- Feet up for extra challenge.
+- **Weight**: 30–40 lbs
+- Anti-rotation challenge. Stand sideways to cable. Slow press and return.
 
 ---
 
 ## Notes
-- Face pulls are essential — they're easy to skip but the rotator cuff work protects climbing shoulders.
-- Hammer curls over regular curls: the forearm engagement directly carries over to bouldering.
-- Week C pull work complements Week A push work — together they create balanced shoulder development.
+- Single-leg RDL is one of the best balance + strength combos available — excellent for hiking and bouldering.
+- Incline press targets upper chest that flat bench misses — together they fully develop the chest.
+- Single-arm rows fix left/right back imbalances that bilateral rows hide.
+- Keep rest short (45–60 sec) for lean muscle; the metabolic demand is already high from unilateral work.

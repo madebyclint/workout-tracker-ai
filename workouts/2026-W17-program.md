@@ -1,5 +1,5 @@
 # Week B — Full Body: Squat + Pull + Glutes
-**Cycle**: B of 4 | **Est. Time**: 40–45 min
+**Week of**: April 20, 2026 | **Cycle**: B of 4 | **Est. Time**: 40–45 min
 **Focus**: Quads · Lats · Glutes · Rear Delts · Core
 
 > Every session works your whole body — lower, pull, and core together.

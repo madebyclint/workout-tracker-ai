@@ -1,63 +1,56 @@
-# Week D — Full Body Compound + Core
-**Cycle**: D of 4 | **Est. Time**: 38–45 min
-**Focus**: Full body · Power endurance · Core integration
+# Week D — Full Body: Power + Carry + Conditioning
+**Cycle**: D of 4 | **Est. Time**: 40–45 min
+**Focus**: Explosive Power · Full-Body Integration · Athletic Conditioning
 
-> Higher heart rate than previous weeks. Compound movements = more fat burning per minute.
-> Rest 60–75 seconds between sets.
+> Most metabolically demanding week of the cycle. Short rest, full-body movements, high calorie burn.
+> Rest 45–60 seconds between sets.
 
 ---
 
-## Block 1 — Compounds (22–25 min)
+## Block 1 — Power + Strength (25–28 min)
 
-### 1. Kettlebell Swing `3 × 20`
-- **Target muscles**: Posterior chain, core, cardio
-- **Clint**: 53 lbs | **Wife**: 26–35 lbs
-- Power from hips, not arms. This is a hip hinge, not a squat. Open the session with these.
+### 1. Goblet Squat to Press `3 × 12`
+- **Target muscles**: Full body — quads, glutes, shoulders, core
+- **Weight**: 35–50 lb KB/DB
+- Squat deep, drive up, press overhead at top in one fluid movement.
 
-### 2. Dumbbell Thruster (Squat to Press) `3 × 12`
-- **Target muscles**: Full body
-- **Clint**: 40–50 lbs total | **Wife**: 15–25 lbs total
-- Squat deep, drive up, press at top in one fluid motion.
+### 2. Dumbbell Push Press `3 × 10`
+- **Target muscles**: Shoulders, triceps, legs (drive)
+- **Weight**: 40–50 lbs total (2 DBs)
+- Slight knee bend, drive from legs, press overhead explosively. Different quality than strict press.
 
 ### 3. Renegade Row `3 × 10 each side`
-- **Target muscles**: Back, core, arms in plank
-- **Clint**: 30–40 lbs each hand | **Wife**: 12–20 lbs each hand
-- Start lighter than you think. The anti-rotation core demand is high.
+- **Target muscles**: Lats, rhomboids, core anti-rotation
+- **Weight**: 25–35 lb DBs (hex dumbbells preferred for stability)
+- Plank position. Row one arm while the other stabilizes. Go lighter than you expect.
 
-### 4. TRX Row (or Ring Row) `3 × 12–15`
-- **Target muscles**: Back, biceps, core
-- Adjust body angle to vary difficulty — more horizontal = harder.
-- Excellent bouldering carryover.
+### 4. Farmer's Carry `3 × 40 yards`
+- **Target muscles**: Grip, traps, core, legs
+- **Weight**: 50–70 lbs each hand
+- Stand tall, short steps. Don't let torso rotate. One of the best full-body exercises available.
 
-### 5. Dumbbell Deadlift `3 × 12`
-- **Target muscles**: Full posterior chain
-- **Clint**: 80–110 lbs total | **Wife**: 40–60 lbs total
-- Hip hinge. Dumbbells outside of feet. Set back, neutral spine.
+### 5. Step-Up (Box or Bench) `3 × 12 each leg`
+- **Target muscles**: Quads, glutes, balance
+- **Weight**: 20–30 lbs total or bodyweight
+- Drive through heel of front foot. Controlled step down.
 
 ---
 
 ## Block 2 — Core (12–15 min)
 
-### 6. Ab Rollout (from knees) `3 × 10–12`
-- Full extension as far as stable.
+### 6. Hanging Knee Raise `3 × 12–15`
+- Controlled. No swinging. Squeeze abs at top.
 
-### 7. RKC Plank `3 × 30–45 sec`
-- Maximum tension throughout.
+### 7. Bicycle Crunch `3 × 20 each side`
+- Slow and deliberate. Elbow toward opposite knee. Don't rush.
 
-### 8. Cable Crunch (Kneeling) `3 × 15`
-- **Clint**: 50–70 lbs | **Wife**: 20–30 lbs
-- Hinge at waist. Don't pull with arms.
-
-### 9. Side Plank with Hip Dip `3 × 12 dips each side`
-- Dynamic variation. Slow and controlled.
-
-### 10. Hollow Body Hold `3 × 25 sec`
-- Arms overhead. Lower back pressed to floor.
+### 8. Plank Shoulder Tap `3 × 20 total`
+- Hips stay level. Slow and controlled. Fights rotation = core anti-rotation training.
 
 ---
 
 ## Notes
-- KB swings are the sleeper fat-burning exercise — 20 reps will spike heart rate more than most cardio.
-- Thrusters are brutal and efficient — if you're short on time, keep these.
-- Renegade rows: use hexagonal dumbbells for stability, or do on a flat bench if the floor is slippery.
-- Week D is the most metabolically demanding of the 4 — good spot to end the cycle before repeating.
+- Goblet squat to press is functional fitness at its core: legs, push, and coordination in one rep.
+- Farmer's carries build grip strength, posture, and total-body conditioning simultaneously.
+- Push press trains explosive power — different muscle fiber recruitment than slow pressing.
+- Week D closes the cycle with the highest metabolic demand — great preparation for cycling back to Week A.

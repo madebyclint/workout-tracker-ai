@@ -6,47 +6,66 @@ async function renderLog() {
   _logLoaded = true;
 
   const el = document.getElementById('logContent');
-  const exs = _sessionState.exercises || {};
-  const hasData = Object.values(exs).some(v => v);
 
-  if (!hasData) {
-    el.innerHTML = `<div class="card">
-      <div class="empty-state">
-        <div class="icon">📋</div>
-        <strong>No session data yet</strong><br>
-        Mark exercises in the Session tab and hit Save Session.
-      </div>
-    </div>`;
+  // 1. Prefer live URL session state
+  const urlHasData = Object.values(_sessionState.exercises || {}).some(v => v);
+  if (urlHasData) {
+    _renderLogContent(el, _sessionState, null);
     return;
   }
 
-  const savedLabel = _sessionState.savedAt
-    ? `Saved ${new Date(_sessionState.savedAt).toLocaleString()}`
+  // 2. Scan all weeks most-recent-first for a completed session
+  try {
+    const index = await fetchJSON(_manifest?.programsIndex || 'workouts/index.json');
+    const weeks = [...(index.weeks || [])].reverse();
+    for (const w of weeks) {
+      if (!w.log) continue;
+      try {
+        const logFile = await fetchJSON(w.log);
+        if (logFile.session?.exercises && Object.values(logFile.session.exercises).some(v => v)) {
+          _renderLogContent(el, logFile.session, w);
+          return;
+        }
+      } catch (e) { /* skip missing files */ }
+    }
+  } catch (e) { /* index not available */ }
+
+  el.innerHTML = `<div class="card">
+    <div class="empty-state">
+      <div class="icon">📋</div>
+      <strong>No session data yet</strong><br>
+      Mark exercises in the Session tab and hit Save Session.
+    </div>
+  </div>`;
+}
+
+function _renderLogContent(el, sessionData, weekEntry) {
+  const exs = sessionData.exercises || {};
+  const savedLabel = sessionData.savedAt
+    ? `Saved ${new Date(sessionData.savedAt).toLocaleString()}`
     : 'In progress — not yet saved';
+  const weekLabel = weekEntry
+    ? `${weekEntry.week} — Week ${weekEntry.cycle}: ${weekEntry.label}`
+    : 'Current Session';
 
   const statusLabel = { complete: 'Done', partial: 'Partial', skip: 'Skipped' };
   const statusClass = { complete: 'log-status-complete', partial: 'log-status-partial', skip: 'log-status-skip' };
 
   let exRows = '';
-  if (_parsedProgram) {
-    for (const block of _parsedProgram) {
-      for (const ex of block.exercises) {
-        const s = exs[ex.name] || '';
-        if (!s) continue;
-        exRows += `<div class="log-ex-row">
-          <span>${ex.name}</span>
-          <span class="log-status-badge ${statusClass[s]}">${statusLabel[s]}</span>
-        </div>`;
-      }
-    }
+  for (const [name, status] of Object.entries(exs)) {
+    if (!status) continue;
+    exRows += `<div class="log-ex-row">
+      <span>${name}</span>
+      <span class="log-status-badge ${statusClass[status]}">${statusLabel[status]}</span>
+    </div>`;
   }
 
-  const notesHtml = _sessionState.notes
-    ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.8rem;color:var(--text2);line-height:1.5"><strong style="color:var(--text)">Notes:</strong> ${_sessionState.notes}</div>`
+  const notesHtml = sessionData.notes
+    ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.8rem;color:var(--text2);line-height:1.5"><strong style="color:var(--text)">Notes:</strong> ${sessionData.notes}</div>`
     : '';
 
   el.innerHTML = `<div class="card">
-    <div class="card-title">Current Session</div>
+    <div class="card-title">${weekLabel}</div>
     <div style="font-size:0.72rem;color:var(--text2);margin-bottom:10px">${savedLabel}</div>
     ${exRows || '<div style="color:var(--text2);font-size:0.82rem">No exercises marked yet.</div>'}
     ${notesHtml}

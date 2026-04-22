@@ -1,18 +1,18 @@
 {
-  "currentWeek": "2026-W14",
-  "currentProgram": "workouts/2026-W14-program.md",
-  "currentSession": "workouts/2026-W14-session.md",
-  "currentLog": "logs/2026-W14-log.json",
+  "currentWeek": "2026-W17",
+  "currentProgram": "workouts/2026-W17-program.md",
+  "currentSession": "workouts/2026-W17-session.md",
+  "currentLog": "logs/2026-W17-log.json",
   "exerciseReference": "exercises/reference.md",
   "historyLog": "logs/history.md",
   "programsIndex": "workouts/index.json",
   "programCycle": ["A", "B", "C", "D"],
-  "currentCycleWeek": "A",
+  "currentCycleWeek": "B",
   "cycleLabels": {
-    "A": "Upper Push + Core",
-    "B": "Lower Body + Core",
-    "C": "Upper Pull + Core",
-    "D": "Full Body Compound + Core"
+    "A": "Full Body — Push + Hinge",
+    "B": "Full Body — Squat + Pull",
+    "C": "Full Body — Unilateral",
+    "D": "Full Body — Power + Carry"
   },
   "athletes": {
     "clint": { "name": "Clint", "height": "5'7\"", "weight": 205 },
