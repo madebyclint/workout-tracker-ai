@@ -346,6 +346,87 @@ header {
 .log-status-partial  { background: rgba(245,197,66,0.18);  color: var(--yellow); }
 .log-status-skip     { background: rgba(144,144,168,0.1);  color: var(--text2); }
 
+/* ─── Log time window tabs ─── */
+.log-time-tabs {
+  display: flex;
+  gap: 3px;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 3px;
+  margin-bottom: 14px;
+}
+.log-time-tab {
+  flex: 1;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--text2);
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 6px 4px;
+  transition: background 0.15s, color 0.15s;
+}
+.log-time-tab.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+.log-time-tab:hover:not(.active) { color: var(--text); }
+
+/* ─── Log balance legend ─── */
+.log-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.log-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.8rem;
+}
+.log-legend-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.log-legend-label {
+  font-weight: 600;
+  width: 34px;
+  flex-shrink: 0;
+}
+.log-legend-bar-wrap {
+  flex: 1;
+  background: var(--surface2);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  min-width: 0;
+}
+.log-legend-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.35s ease;
+}
+.log-legend-pct {
+  font-weight: 700;
+  font-size: 0.78rem;
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.log-legend-count {
+  font-size: 0.68rem;
+  color: var(--text2);
+  width: 18px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
 /* ─── Reference / Exercise Library ─── */
 .ref-content {
   font-size: 0.82rem;
