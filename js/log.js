@@ -1,70 +1,99 @@
 // ─────────────────────────────────────
-//  Exercise → muscle category map
+//  Exercise → {cat, sub} map
+//
+//  Main cats (for chart):  push · pull · legs · core
+//  Arms subcats:  chest · shoulder · triceps · back · biceps
+//  Legs subcats:  quad · glute · hinge · power
+//  Core subcats:  stability · anti-rot · flexion
 // ─────────────────────────────────────
-const EXERCISE_CATEGORIES = {
-  // ── Push ──────────────────────────
-  'Dumbbell Bench Press':              'push',
-  'Incline Dumbbell Press':            'push',
-  'Dumbbell Shoulder Press (Standing)':'push',
-  'Lateral Raises':                    'push',
-  'Tricep Pushdown (Cable)':           'push',
-  'Dumbbell Push Press':               'push',
-  'Cable Crunch (Kneeling)':           'push',
-  // ── Pull ──────────────────────────
-  'Lat Pulldown (Cable)':              'pull',
-  'Lat Pulldown':                      'pull',
-  'Face Pull (Cable)':                 'pull',
-  'Face Pulls (Cable Rope)':           'pull',
-  'Single-Arm Dumbbell Row':           'pull',
-  'Seated Cable Row':                  'pull',
-  'Hammer Curl':                       'pull',
-  'Renegade Row':                      'pull',
-  'TRX Row (or Ring Row)':             'pull',
-  // ── Legs ──────────────────────────
-  'Goblet Squat':                      'legs',
-  'Goblet Squat to Press':             'legs',
-  'Romanian Deadlift (RDL)':           'legs',
-  'Bulgarian Split Squat':             'legs',
-  'Hip Thrust (Glute Bridge)':         'legs',
-  'Glute Bridge / Hip Thrust':         'legs',
-  'Calf Raises (Standing)':            'legs',
-  'Walking Lunges':                    'legs',
-  'Single-Leg Romanian Deadlift':      'legs',
-  'Step-Up (Box or Bench)':            'legs',
-  "Farmer's Carry":                    'legs',
-  'Dumbbell Deadlift':                 'legs',
-  'Kettlebell Swing':                  'legs',
-  'Dumbbell Thruster (Squat to Press)':'legs',
-  // ── Core ──────────────────────────
-  'Dead Bug':                          'core',
-  'Pallof Press':                      'core',
-  'RKC Plank':                         'core',
-  'Cable Woodchop (High to Low)':      'core',
-  'Cable Woodchop (Low to High)':      'core',
-  'Hollow Body Hold':                  'core',
-  'Side Plank':                        'core',
-  'Side Plank with Hip Dip':           'core',
-  'Ab Rollout (from knees)':           'core',
-  'Bicycle Crunch':                    'core',
-  'L-Sit Hold':                        'core',
-  'Hanging Knee Raise':                'core',
-  'Hanging Leg Raise (straight legs)': 'core',
-  'Bird Dog':                          'core',
-  'Plank Shoulder Tap':                'core',
-  'Russian Twist':                     'core',
+const EXERCISE_META = {
+  // ── Push ──────────────────────────────────────────────────
+  'Dumbbell Bench Press':               { cat:'push', sub:'Chest' },
+  'Incline Dumbbell Press':             { cat:'push', sub:'Chest' },
+  'Dumbbell Shoulder Press (Standing)': { cat:'push', sub:'Shoulder' },
+  'Lateral Raises':                     { cat:'push', sub:'Shoulder' },
+  'Tricep Pushdown (Cable)':            { cat:'push', sub:'Triceps' },
+  'Dumbbell Push Press':                { cat:'push', sub:'Shoulder' },
+  'Cable Crunch (Kneeling)':            { cat:'core', sub:'Flexion' },
+  // ── Pull ──────────────────────────────────────────────────
+  'Lat Pulldown (Cable)':               { cat:'pull', sub:'Back' },
+  'Lat Pulldown':                       { cat:'pull', sub:'Back' },
+  'Face Pull (Cable)':                  { cat:'pull', sub:'Rear Delt' },
+  'Face Pulls (Cable Rope)':            { cat:'pull', sub:'Rear Delt' },
+  'Single-Arm Dumbbell Row':            { cat:'pull', sub:'Back' },
+  'Seated Cable Row':                   { cat:'pull', sub:'Back' },
+  'Hammer Curl':                        { cat:'pull', sub:'Biceps' },
+  'Renegade Row':                       { cat:'pull', sub:'Back' },
+  'TRX Row (or Ring Row)':              { cat:'pull', sub:'Back' },
+  // ── Legs: Quad ────────────────────────────────────────────
+  'Goblet Squat':                       { cat:'legs', sub:'Quad' },
+  'Goblet Squat to Press':              { cat:'legs', sub:'Quad' },
+  'Bulgarian Split Squat':              { cat:'legs', sub:'Quad' },
+  'Calf Raises (Standing)':             { cat:'legs', sub:'Quad' },
+  'Walking Lunges':                     { cat:'legs', sub:'Quad' },
+  'Step-Up (Box or Bench)':             { cat:'legs', sub:'Quad' },
+  // ── Legs: Glute ───────────────────────────────────────────
+  'Hip Thrust (Glute Bridge)':          { cat:'legs', sub:'Glute' },
+  'Glute Bridge / Hip Thrust':          { cat:'legs', sub:'Glute' },
+  // ── Legs: Hinge (Hamstring/Posterior) ─────────────────────
+  'Romanian Deadlift (RDL)':            { cat:'legs', sub:'Hinge' },
+  'Single-Leg Romanian Deadlift':       { cat:'legs', sub:'Hinge' },
+  'Dumbbell Deadlift':                  { cat:'legs', sub:'Hinge' },
+  // ── Legs: Power ───────────────────────────────────────────
+  'Kettlebell Swing':                   { cat:'legs', sub:'Power' },
+  'Dumbbell Thruster (Squat to Press)': { cat:'legs', sub:'Power' },
+  "Farmer's Carry":                     { cat:'legs', sub:'Power' },
+  // ── Core: Stability (isometric/anti-extension) ────────────
+  'Dead Bug':                           { cat:'core', sub:'Stability' },
+  'RKC Plank':                          { cat:'core', sub:'Stability' },
+  'Hollow Body Hold':                   { cat:'core', sub:'Stability' },
+  'Side Plank':                         { cat:'core', sub:'Stability' },
+  'Side Plank with Hip Dip':            { cat:'core', sub:'Stability' },
+  'Bird Dog':                           { cat:'core', sub:'Stability' },
+  'Plank Shoulder Tap':                 { cat:'core', sub:'Stability' },
+  'L-Sit Hold':                         { cat:'core', sub:'Stability' },
+  // ── Core: Anti-Rotation ───────────────────────────────────
+  'Pallof Press':                       { cat:'core', sub:'Anti-Rot' },
+  'Cable Woodchop (High to Low)':       { cat:'core', sub:'Anti-Rot' },
+  'Cable Woodchop (Low to High)':       { cat:'core', sub:'Anti-Rot' },
+  'Russian Twist':                      { cat:'core', sub:'Anti-Rot' },
+  // ── Core: Flexion ─────────────────────────────────────────
+  'Ab Rollout (from knees)':            { cat:'core', sub:'Flexion' },
+  'Bicycle Crunch':                     { cat:'core', sub:'Flexion' },
+  'Hanging Knee Raise':                 { cat:'core', sub:'Flexion' },
+  'Hanging Leg Raise (straight legs)':  { cat:'core', sub:'Flexion' },
 };
 
-function categorizeExercise(name) {
-  if (EXERCISE_CATEGORIES[name]) return EXERCISE_CATEGORIES[name];
+// Returns { cat, sub } — falls back gracefully for unknown exercises
+function getExerciseMeta(name) {
+  if (EXERCISE_META[name]) return EXERCISE_META[name];
   const n = name.toLowerCase();
-  if (n.includes('squat') || n.includes('lunge') || n.includes('deadlift') ||
-      n.includes('hip thrust') || n.includes('glute') || n.includes('calf') ||
-      n.includes('step-up') || n.includes('carry') || n.includes('swing')) return 'legs';
-  if (n.includes('row') || n.includes('pulldown') || n.includes('pull-up') ||
-      n.includes('curl') || n.includes('face pull')) return 'pull';
-  if (n.includes('press') || n.includes('fly') || n.includes('raise') ||
-      n.includes('pushdown') || n.includes('dip')) return 'push';
-  return 'core';
+  if (n.includes('hip thrust') || n.includes('glute bridge')) return { cat:'legs', sub:'Glute' };
+  if (n.includes('deadlift') || n.includes('rdl'))            return { cat:'legs', sub:'Hinge' };
+  if (n.includes('squat') || n.includes('lunge') || n.includes('step-up') || n.includes('calf')) return { cat:'legs', sub:'Quad' };
+  if (n.includes('swing') || n.includes('carry') || n.includes('thruster')) return { cat:'legs', sub:'Power' };
+  if (n.includes('row') || n.includes('pulldown') || n.includes('pull-up')) return { cat:'pull', sub:'Back' };
+  if (n.includes('curl'))                                      return { cat:'pull', sub:'Biceps' };
+  if (n.includes('face pull'))                                 return { cat:'pull', sub:'Rear Delt' };
+  if (n.includes('bench') || n.includes('fly'))                return { cat:'push', sub:'Chest' };
+  if (n.includes('shoulder') || n.includes('lateral') || n.includes('raise')) return { cat:'push', sub:'Shoulder' };
+  if (n.includes('tricep') || n.includes('pushdown') || n.includes('dip'))    return { cat:'push', sub:'Triceps' };
+  if (n.includes('plank') || n.includes('hollow') || n.includes('bird dog'))  return { cat:'core', sub:'Stability' };
+  if (n.includes('woodchop') || n.includes('pallof') || n.includes('twist'))  return { cat:'core', sub:'Anti-Rot' };
+  if (n.includes('crunch') || n.includes('rollout') || n.includes('raise'))   return { cat:'core', sub:'Flexion' };
+  if (n.includes('press') || n.includes('fly') || n.includes('pushdown'))     return { cat:'push', sub:'Chest' };
+  return { cat:'core', sub:'Stability' };
+}
+
+// Convenience: just the main cat (for chart aggregation)
+function categorizeExercise(name) {
+  return getExerciseMeta(name).cat;
+}
+
+// Returns an HTML badge string for an exercise
+function exCatBadgeHtml(name) {
+  const { cat, sub } = getExerciseMeta(name);
+  return `<span class="ex-cat-badge ex-cat-${cat}">${cat.charAt(0).toUpperCase()+cat.slice(1)}</span><span class="ex-sub-badge">${sub}</span>`;
 }
 
 // ─────────────────────────────────────
@@ -128,10 +157,9 @@ async function renderLog() {
   const last = _allLogSessions[0];
   const lastWeek = last._week || null;
 
-  // Build layout
+  // Build layout — balance chart first, last session below
   el.innerHTML = `
-    ${_buildLastSessionHtml(last, lastWeek)}
-    <div class="card" style="margin-top:14px">
+    <div class="card">
       <div class="card-title" style="margin-bottom:10px">Body Balance</div>
       <div class="log-time-tabs">
         <button class="log-time-tab${_logWindow==='week'?' active':''}"  data-win="week"  onclick="switchLogWindow('week')">7 days</button>
@@ -140,7 +168,8 @@ async function renderLog() {
         <button class="log-time-tab${_logWindow==='all'?' active':''}"   data-win="all"   onclick="switchLogWindow('all')">All time</button>
       </div>
       <div id="logBalanceContent"></div>
-    </div>`;
+    </div>
+    <div style="margin-top:14px">${_buildLastSessionHtml(last, lastWeek)}</div>`;
 
   _renderLogBalance();
 }
@@ -164,7 +193,7 @@ function _buildLastSessionHtml(s, w) {
   for (const [name, status] of Object.entries(exs)) {
     if (!status) continue;
     exRows += `<div class="log-ex-row">
-      <span>${name}</span>
+      <span class="log-ex-name-wrap">${exCatBadgeHtml(name)}<span class="log-ex-name">${name}</span></span>
       <span class="log-status-badge ${statusClass[status]}">${statusLabel[status]}</span>
     </div>`;
   }

@@ -84,7 +84,10 @@ function renderProgram(md) {
 
     for (const ex of block.exercises) {
       html += `<div class="exercise-item">
-        <div class="exercise-name">${ex.name}</div>
+        <div class="exercise-name-row">
+          <span class="exercise-name">${ex.name}</span>
+          <span class="exercise-cat-badges">${exCatBadgeHtml(ex.name)}</span>
+        </div>
         <div class="exercise-scheme">${ex.scheme}</div>`;
 
       if (ex.muscles) {

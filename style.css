@@ -151,6 +151,54 @@ header {
   margin: 0 2px 2px 0;
   color: var(--text2);
 }
+
+/* ─── Exercise category + sub badges ─── */
+.exercise-name-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+.exercise-cat-badges {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  align-items: center;
+}
+.ex-cat-badge {
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.ex-cat-push { background: rgba(124,106,247,0.2); color: #9d8eff; }
+.ex-cat-pull { background: rgba(62,207,142,0.2);  color: #3ecf8e; }
+.ex-cat-legs { background: rgba(224,92,151,0.2);  color: #e05c97; }
+.ex-cat-core { background: rgba(245,197,66,0.2);  color: #f5c542; }
+.ex-sub-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text2);
+  letter-spacing: 0.2px;
+}
+
+/* ─── Log exercise row with badges ─── */
+.log-ex-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+.log-ex-name {
+  font-size: 0.82rem;
+}
 .exercise-notes {
   font-size: 0.72rem;
   color: var(--text2);
