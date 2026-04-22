@@ -304,6 +304,54 @@
       white-space: nowrap;
     }
     .complete-workout-btn:hover { filter: brightness(1.1); }
+    .save-session-btn {
+      background: var(--accent);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 700;
+      padding: 8px 14px;
+      transition: filter 0.15s;
+      white-space: nowrap;
+    }
+    .save-session-btn:hover { filter: brightness(1.15); }
+    .session-notes {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.82rem;
+      line-height: 1.5;
+      padding: 10px 12px;
+      resize: vertical;
+      width: 100%;
+    }
+    .session-notes:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    /* ─── Log session summary ─── */
+    .log-ex-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.82rem;
+    }
+    .log-ex-row:last-child { border-bottom: none; }
+    .log-status-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .log-status-complete { background: rgba(62,207,142,0.18); color: var(--green); }
+    .log-status-partial  { background: rgba(245,197,66,0.18);  color: var(--yellow); }
+    .log-status-skip     { background: rgba(144,144,168,0.1);  color: var(--text2); }
 
     /* ─── Charts / Log ─── */
     .chart-wrap {
@@ -494,7 +542,7 @@ let _programText = '';
 let _referenceText = '';
 let _archiveLoaded = false;
 let _logLoaded = false;
-let _sessionState = { exercises: {} }; // exercises: { "ExName": "complete" | "partial" | "skip" | "" }
+let _sessionState = { exercises: {}, notes: '', savedAt: null }; // exercises: { "ExName": "complete" | "partial" | "skip" | "" }
 let _parsedProgram = null; // parsed exercise data
 let _charts = {};
 
@@ -777,7 +825,14 @@ function renderSession() {
 
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
       <button class="complete-workout-btn" onclick="completeWorkout()">Complete All</button>
-      <button class="share-btn" onclick="shareSession()">Share</button>
+      <button class="save-session-btn" onclick="saveSession()">Save Session</button>
+      <button class="share-btn" onclick="shareSession()">Copy URL</button>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:6px">Session Notes</div>
+      <textarea class="session-notes" rows="3" placeholder="How did it feel? Any PRs, adjustments, or things to remember…"
+        oninput="updateNotes(this.value)">${_sessionState.notes || ''}</textarea>
     </div>
   `;
 
@@ -844,11 +899,27 @@ function completeWorkout() {
   showToast('Workout marked complete!');
 }
 
+function updateNotes(val) {
+  _sessionState.notes = val;
+  saveSessionToURL();
+}
+
+function saveSession() {
+  _sessionState.savedAt = new Date().toISOString();
+  saveSessionToURL();
+  const url = new URL(window.location.href);
+  url.searchParams.set('session', encodeSession(_sessionState));
+  navigator.clipboard.writeText(url.toString()).catch(() => {});
+  // Force log tab to re-render with new data
+  _logLoaded = false;
+  showToast('Session saved & URL copied!');
+}
+
 function shareSession() {
   const url = new URL(window.location.href);
   url.searchParams.set('session', encodeSession(_sessionState));
   navigator.clipboard.writeText(url.toString()).catch(() => {});
-  showToast('Session URL copied to clipboard!');
+  showToast('URL copied to clipboard!');
 }
 
 // ─────────────────────────────────────
@@ -859,37 +930,56 @@ async function renderLog() {
   _logLoaded = true;
 
   const el = document.getElementById('logContent');
+  let html = '';
 
-  try {
-    const log = await fetchJSON(_manifest.currentLog);
+  // ── Current session from URL state ──
+  const exs = _sessionState.exercises || {};
+  const hasData = Object.values(exs).some(v => v);
 
-    if (!log.athletes || (!log.athletes.clint.exercises.length && !log.athletes.wife.exercises.length)) {
-      el.innerHTML = `<div class="card">
-        <div class="empty-state">
-          <div class="icon">📊</div>
-          <strong>No session data yet</strong><br>
-          Complete a session and save it to see charts and history here.
-        </div>
-      </div>`;
-      return;
+  if (hasData) {
+    const savedLabel = _sessionState.savedAt
+      ? `Saved ${new Date(_sessionState.savedAt).toLocaleString()}`
+      : 'In progress — not yet saved';
+
+    const statusOrder = ['complete', 'partial', 'skip', ''];
+    const statusLabel = { complete: 'Done', partial: 'Partial', skip: 'Skipped' };
+    const statusClass = { complete: 'log-status-complete', partial: 'log-status-partial', skip: 'log-status-skip' };
+
+    let exRows = '';
+    if (_parsedProgram) {
+      for (const block of _parsedProgram) {
+        for (const ex of block.exercises) {
+          const s = exs[ex.name] || '';
+          if (!s) continue;
+          exRows += `<div class="log-ex-row">
+            <span>${ex.name}</span>
+            <span class="log-status-badge ${statusClass[s]}">${statusLabel[s]}</span>
+          </div>`;
+        }
+      }
     }
 
-    // Build charts from log data
-    el.innerHTML = `
-      <div class="card">
-        <div class="card-title">Session Volume — Clint</div>
-        <div class="chart-wrap"><canvas id="chartClint"></canvas></div>
-      </div>
-      <div class="card">
-        <div class="card-title">Session Volume — Wife</div>
-        <div class="chart-wrap"><canvas id="chartWife"></canvas></div>
-      </div>`;
+    const notesHtml = _sessionState.notes
+      ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.8rem;color:var(--text2);line-height:1.5"><strong style="color:var(--text)">Notes:</strong> ${_sessionState.notes}</div>`
+      : '';
 
-    renderVolumeChart('chartClint', log.athletes.clint.exercises, '#7c6af7');
-    renderVolumeChart('chartWife', log.athletes.wife.exercises, '#e05c97');
-  } catch (e) {
-    el.innerHTML = `<div class="error-msg">Could not load log: ${e.message}</div>`;
+    html += `<div class="card" style="margin-bottom:16px">
+      <div class="card-title">Current Session</div>
+      <div style="font-size:0.72rem;color:var(--text2);margin-bottom:10px">${savedLabel}</div>
+      ${exRows || '<div style="color:var(--text2);font-size:0.82rem">No exercises marked yet.</div>'}
+      ${notesHtml}
+    </div>`;
+  } else {
+    html += `<div class="card" style="margin-bottom:16px">
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <strong>No session data yet</strong><br>
+        Mark exercises in the Session tab and hit Save Session.
+      </div>
+    </div>`;
   }
+
+  el.innerHTML = html;
 }
 
 function renderVolumeChart(canvasId, exercises, color) {
