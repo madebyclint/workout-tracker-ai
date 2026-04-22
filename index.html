@@ -239,95 +239,71 @@
       box-shadow: 0 1px 3px rgba(0,0,0,0.4);
     }
 
-    /* Set rows */
-    .session-exercise-group { margin-bottom: 20px; }
-    .session-exercise-name {
-      font-weight: 600;
-      font-size: 0.88rem;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    /* ─── Exercise Status Cards ─── */
+    .exercise-status-card {
+      background: var(--surface2);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 10px;
+      transition: border-color 0.2s;
     }
-    .session-exercise-name .scheme {
-      font-size: 0.7rem;
+    .exercise-status-card.complete { border-color: var(--green); }
+    .exercise-status-card.partial  { border-color: var(--yellow); }
+    .exercise-status-card.skip     { opacity: 0.45; }
+    .ex-status-header {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .ex-status-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+    }
+    .ex-status-scheme {
+      font-size: 0.72rem;
       color: var(--accent);
       font-weight: 700;
     }
-    .set-row {
-      display: grid;
-      grid-template-columns: 28px 1fr 90px 50px;
-      gap: 8px;
-      align-items: center;
-      margin-bottom: 6px;
+    .ex-status-scaling {
+      font-size: 0.72rem;
+      color: var(--text2);
+      margin-bottom: 10px;
     }
-    .set-check {
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-      border: 2px solid var(--border);
-      background: none;
-      cursor: pointer;
+    .ex-status-btns {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      flex-shrink: 0;
-      transition: background 0.15s, border-color 0.15s;
+      gap: 7px;
     }
-    .set-check.done {
+    .ex-btn {
+      flex: 1;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      color: var(--text2);
+      font-size: 0.76rem;
+      font-weight: 600;
+      padding: 8px 4px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .ex-btn:hover { color: var(--text); }
+    .ex-btn-complete.active { background: rgba(62,207,142,0.18); border-color: var(--green); color: var(--green); }
+    .ex-btn-partial.active  { background: rgba(245,197,66,0.18); border-color: var(--yellow); color: var(--yellow); }
+    .ex-btn-skip.active     { background: rgba(144,144,168,0.12); border-color: var(--text2); color: var(--text2); }
+    .complete-workout-btn {
       background: var(--green);
-      border-color: var(--green);
+      border: none;
+      border-radius: 8px;
       color: #111;
-    }
-    .set-check.skipped {
-      background: var(--surface2);
-      border-color: var(--border);
-      color: var(--text2);
-      text-decoration: line-through;
-    }
-    .set-label {
+      cursor: pointer;
       font-size: 0.78rem;
-      color: var(--text2);
+      font-weight: 700;
+      padding: 8px 14px;
+      transition: filter 0.15s;
+      white-space: nowrap;
     }
-    .set-weight-input {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 0.8rem;
-      padding: 5px 8px;
-      text-align: center;
-      width: 100%;
-    }
-    .set-weight-input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    .set-reps-input {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-size: 0.8rem;
-      padding: 5px 6px;
-      text-align: center;
-      width: 100%;
-    }
-    .set-reps-input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    .set-row-header {
-      display: grid;
-      grid-template-columns: 28px 1fr 90px 50px;
-      gap: 8px;
-      font-size: 0.65rem;
-      color: var(--text2);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
-    }
+    .complete-workout-btn:hover { filter: brightness(1.1); }
 
     /* ─── Charts / Log ─── */
     .chart-wrap {
@@ -518,7 +494,7 @@ let _programText = '';
 let _referenceText = '';
 let _archiveLoaded = false;
 let _logLoaded = false;
-let _sessionState = { athlete: 'clint', sets: {} }; // sets: { "ExName-SetIdx": { done, skipped, weight, reps } }
+let _sessionState = { athlete: 'clint', exercises: {} }; // exercises: { "ExName": "complete" | "partial" | "skip" | "" }
 let _parsedProgram = null; // parsed exercise data
 let _charts = {};
 
@@ -762,30 +738,16 @@ function renderProgram(md) {
 // ─────────────────────────────────────
 //  Build SESSION state structure from parsed program
 // ─────────────────────────────────────
-function buildSessionSetsFromProgram() {
+function buildSessionExercisesFromProgram() {
   if (!_parsedProgram) return;
-  // Ensure keys exist — don't overwrite existing saved state
+  if (!_sessionState.exercises) _sessionState.exercises = {};
   for (const block of _parsedProgram) {
     for (const ex of block.exercises) {
-      const setsCount = parseSetCount(ex.scheme);
-      for (let i = 0; i < setsCount; i++) {
-        const key = `${ex.name}|${i}`;
-        if (!_sessionState.sets[key]) {
-          _sessionState.sets[key] = { done: false, skipped: false, weight: '', reps: '' };
-        }
+      if (!(_sessionState.exercises[ex.name] !== undefined)) {
+        _sessionState.exercises[ex.name] = '';
       }
     }
   }
-}
-
-function parseSetCount(scheme) {
-  const m = scheme.match(/^(\d+)\s*[×x]/);
-  return m ? parseInt(m[1]) : 3;
-}
-
-function parseRepScheme(scheme) {
-  const m = scheme.match(/[×x]\s*(.+)$/);
-  return m ? m[1].trim() : '12–15';
 }
 
 // ─────────────────────────────────────
@@ -797,79 +759,63 @@ function renderSession() {
     return;
   }
 
-  buildSessionSetsFromProgram();
+  buildSessionExercisesFromProgram();
 
-  const totalSets = Object.keys(_sessionState.sets).length;
-  const doneSets = Object.values(_sessionState.sets).filter(s => s.done).length;
-  const pct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
+  const exs = _sessionState.exercises || {};
+  const allExNames = _parsedProgram.flatMap(b => b.exercises.map(e => e.name));
+  const total = allExNames.length;
+  const doneCount = allExNames.filter(n => exs[n] === 'complete' || exs[n] === 'partial').length;
+  const pct = total > 0 ? Math.round((doneCount / total) * 100) : 0;
 
   const athlete = _sessionState.athlete || 'clint';
-  const athleteLabel = athlete === 'clint' ? 'Clint' : 'Wife';
 
   let html = `
     <div class="session-bar">
       <div class="progress-wrap">
-        <div class="progress-label">${doneSets} / ${totalSets} sets complete (${pct}%)</div>
+        <div class="progress-label">${doneCount} / ${total} exercises done (${pct}%)</div>
         <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
       </div>
-      <button class="share-btn" onclick="shareSession()">Share / Save</button>
     </div>
 
-    <div class="athlete-toggle">
-      <button class="athlete-btn ${athlete === 'clint' ? 'active' : ''}" onclick="setAthlete('clint')">Clint</button>
-      <button class="athlete-btn ${athlete === 'wife' ? 'active' : ''}" onclick="setAthlete('wife')">Wife</button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+      <div class="athlete-toggle" style="margin-bottom:0">
+        <button class="athlete-btn ${athlete === 'clint' ? 'active' : ''}" onclick="setAthlete('clint')">Clint</button>
+        <button class="athlete-btn ${athlete === 'wife' ? 'active' : ''}" onclick="setAthlete('wife')">Wife</button>
+      </div>
+      <button class="complete-workout-btn" onclick="completeWorkout()">Complete All</button>
+      <button class="share-btn" onclick="shareSession()">Share</button>
     </div>
   `;
 
   for (const block of _parsedProgram) {
-    html += `<div class="session-exercise-group" style="margin-bottom:24px">
-      <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);margin-bottom:10px">${block.label}</div>`;
+    html += `<div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--text2);margin-bottom:8px;margin-top:4px;padding-bottom:4px;border-bottom:1px solid var(--border)">${block.label}</div>`;
 
     for (const ex of block.exercises) {
-      const setsCount = parseSetCount(ex.scheme);
-      const repScheme = parseRepScheme(ex.scheme);
+      const status = exs[ex.name] || '';
       const scaling = athlete === 'clint' ? ex.scaling.clint : ex.scaling.wife;
 
-      html += `<div class="card" style="margin-bottom:10px">
-        <div class="session-exercise-name">
-          ${ex.name}
-          <span class="scheme">${ex.scheme}</span>
-        </div>`;
-
-      if (scaling) {
-        html += `<div style="font-size:0.72rem;color:var(--text2);margin-bottom:10px">Target: ${scaling}</div>`;
-      }
-
-      html += `<div class="set-row-header">
-        <span></span>
-        <span>Set</span>
-        <span>Weight (lbs)</span>
-        <span>Reps</span>
+      html += `<div class="exercise-status-card ${status}">
+        <div class="ex-status-header">
+          <span class="ex-status-name">${ex.name}</span>
+          <span class="ex-status-scheme">${ex.scheme}</span>
+        </div>
+        ${scaling ? `<div class="ex-status-scaling">${scaling}</div>` : ''}
+        <div class="ex-status-btns">
+          <button class="ex-btn ex-btn-complete${status === 'complete' ? ' active' : ''}"
+            onclick="setExerciseStatus('${escAttr(ex.name)}', ${status === 'complete' ? "''" : "'complete'"})">
+            ✓ Done
+          </button>
+          <button class="ex-btn ex-btn-partial${status === 'partial' ? ' active' : ''}"
+            onclick="setExerciseStatus('${escAttr(ex.name)}', ${status === 'partial' ? "''" : "'partial'"})">
+            ◑ Partial
+          </button>
+          <button class="ex-btn ex-btn-skip${status === 'skip' ? ' active' : ''}"
+            onclick="setExerciseStatus('${escAttr(ex.name)}', ${status === 'skip' ? "''" : "'skip'"})">
+            ✗ Skip
+          </button>
+        </div>
       </div>`;
-
-      for (let i = 0; i < setsCount; i++) {
-        const key = `${ex.name}|${i}`;
-        const s = _sessionState.sets[key] || { done: false, skipped: false, weight: '', reps: '' };
-        const checkClass = s.done ? 'done' : (s.skipped ? 'skipped' : '');
-        const checkIcon = s.done ? '✓' : (s.skipped ? '—' : '');
-
-        html += `<div class="set-row">
-          <button class="set-check ${checkClass}" onclick="cycleSetState('${escAttr(key)}')">${checkIcon}</button>
-          <span class="set-label">Set ${i + 1} · ${repScheme}</span>
-          <input class="set-weight-input" type="number" min="0" step="2.5" placeholder="lbs"
-            value="${escAttr(s.weight)}"
-            onchange="updateSetField('${escAttr(key)}','weight',this.value)"
-            oninput="updateSetField('${escAttr(key)}','weight',this.value)">
-          <input class="set-reps-input" type="number" min="0" step="1" placeholder="reps"
-            value="${escAttr(s.reps)}"
-            onchange="updateSetField('${escAttr(key)}','reps',this.value)"
-            oninput="updateSetField('${escAttr(key)}','reps',this.value)">
-        </div>`;
-      }
-
-      html += `</div>`;
     }
-    html += `</div>`;
   }
 
   document.getElementById('sessionContent').innerHTML = html;
@@ -879,28 +825,26 @@ function escAttr(s) {
   return String(s).replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
-function cycleSetState(key) {
-  const s = _sessionState.sets[key];
-  if (!s) return;
-  if (!s.done && !s.skipped) { s.done = true; }
-  else if (s.done) { s.done = false; s.skipped = true; }
-  else { s.skipped = false; }
+function setExerciseStatus(name, status) {
+  if (!_sessionState.exercises) _sessionState.exercises = {};
+  _sessionState.exercises[name] = status;
   saveSessionToURL();
   renderSession();
 }
 
-function updateSetField(key, field, value) {
-  if (!_sessionState.sets[key]) return;
-  _sessionState.sets[key][field] = value;
+function completeWorkout() {
+  if (!_parsedProgram) return;
+  if (!_sessionState.exercises) _sessionState.exercises = {};
+  for (const block of _parsedProgram) {
+    for (const ex of block.exercises) {
+      if (!_sessionState.exercises[ex.name]) {
+        _sessionState.exercises[ex.name] = 'complete';
+      }
+    }
+  }
   saveSessionToURL();
-  // Update progress bar only, don't full re-render (avoids focus loss)
-  const totalSets = Object.keys(_sessionState.sets).length;
-  const doneSets = Object.values(_sessionState.sets).filter(s => s.done).length;
-  const pct = totalSets > 0 ? Math.round((doneSets / totalSets) * 100) : 0;
-  const bar = document.querySelector('.progress-bar-fill');
-  const label = document.querySelector('.progress-label');
-  if (bar) bar.style.width = pct + '%';
-  if (label) label.textContent = `${doneSets} / ${totalSets} sets complete (${pct}%)`;
+  renderSession();
+  showToast('Workout marked complete!');
 }
 
 function setAthlete(who) {
@@ -1095,22 +1039,8 @@ function saveSessionToLog() {
 
   for (const block of _parsedProgram) {
     for (const ex of block.exercises) {
-      const setsCount = parseSetCount(ex.scheme);
-      const sets = [];
-      for (let i = 0; i < setsCount; i++) {
-        const key = `${ex.name}|${i}`;
-        const s = _sessionState.sets[key];
-        if (s && (s.done || s.weight || s.reps)) {
-          sets.push({
-            set: i + 1,
-            done: s.done,
-            skipped: s.skipped,
-            weight: parseFloat(s.weight) || 0,
-            reps: parseInt(s.reps) || 0
-          });
-        }
-      }
-      if (sets.length) exercises.push({ name: ex.name, block: block.label, sets });
+      const status = (_sessionState.exercises || {})[ex.name] || '';
+      if (status) exercises.push({ name: ex.name, block: block.label, status });
     }
   }
 
