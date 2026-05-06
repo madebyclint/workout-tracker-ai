@@ -21,6 +21,7 @@
     <button class="tab-btn" data-tab="log">Log</button>
     <button class="tab-btn" data-tab="reference">Reference</button>
     <button class="tab-btn" data-tab="archive">Archive</button>
+    <button class="tab-btn" data-tab="generate">Generate</button>
   </nav>
 </header>
 
@@ -53,6 +54,11 @@
   <section id="tab-archive" class="page">
     <div id="archiveContent" class="loading">Loading archive…</div>
   </section>
+
+  <!-- GENERATE TAB -->
+  <section id="tab-generate" class="page">
+    <div id="generateContent"></div>
+  </section>
 </main>
 
 <div class="toast" id="toast"></div>
@@ -63,6 +69,7 @@
 <script src="js/program.js"></script>
 <script src="js/session.js"></script>
 <script src="js/log.js"></script>
+<script src="js/generate.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

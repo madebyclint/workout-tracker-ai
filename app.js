@@ -8,6 +8,7 @@ function switchTab(id) {
   if (id === 'session') renderSession();
   if (id === 'log') renderLog();
   if (id === 'archive') renderArchive();
+  if (id === 'generate') renderGenerate();
 }
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
