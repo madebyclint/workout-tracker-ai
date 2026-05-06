@@ -61,11 +61,58 @@ async function boot() {
   } catch (e) {
     document.getElementById('programContent').innerHTML =
       `<div class='error-msg'>
-        <strong>Could not load data.</strong><br>
-        Run the app via <code>npx serve .</code> to avoid CORS restrictions on local fetch().<br><br>
-        Error: ${e.message}
+        <strong>Could not load data.</strong><br><br>
+        ${e.message}
       </div>`;
   }
 }
 
 boot();
+
+// ─────────────────────────────────────
+//  Pull to Refresh
+// ─────────────────────────────────────
+(function initPTR() {
+  const el = document.getElementById('ptr');
+  const spinner = el.querySelector('.ptr-spinner');
+  const THRESHOLD = 72;
+  let startY = 0, pulling = false, refreshing = false;
+
+  document.addEventListener('touchstart', e => {
+    if (!refreshing && window.scrollY === 0) {
+      startY = e.touches[0].clientY;
+      pulling = true;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchmove', e => {
+    if (!pulling || refreshing) return;
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0) {
+      const pct = Math.min(dy / THRESHOLD, 1);
+      el.style.transition = 'none';
+      el.style.transform = `translateY(${(pct - 1) * 100}%)`;
+      spinner.style.transform = `rotate(${pct * 360}deg)`;
+    }
+  }, { passive: true });
+
+  document.addEventListener('touchend', async e => {
+    if (!pulling || refreshing) return;
+    pulling = false;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (dy >= THRESHOLD) {
+      refreshing = true;
+      el.style.transition = '';
+      el.style.transform = 'translateY(0)';
+      spinner.style.transform = '';
+      el.classList.add('spinning');
+      await boot();
+      el.classList.remove('spinning');
+      el.style.transform = '';
+      refreshing = false;
+    } else {
+      el.style.transition = '';
+      el.style.transform = '';
+    }
+  });
+}());

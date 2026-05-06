@@ -49,7 +49,11 @@ function loadSessionFromURL() {
 // ─────────────────────────────────────
 async function fetchJSON(path) {
   const r = await fetch(path);
-  if (!r.ok) throw new Error(`Failed to fetch ${path}: ${r.status}`);
+  if (!r.ok) {
+    let msg = `${r.status}`;
+    try { const body = await r.json(); if (body.error) msg = body.error; } catch {}
+    throw new Error(`Failed to fetch ${path}: ${msg}`);
+  }
   return r.json();
 }
 
