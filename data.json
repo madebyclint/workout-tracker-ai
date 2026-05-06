@@ -1,13 +1,13 @@
 {
-  "currentWeek": "2026-W17",
-  "currentProgram": "workouts/2026-W17-program.md",
-  "currentSession": "workouts/2026-W17-session.md",
-  "currentLog": "logs/2026-W17-log.json",
+  "currentWeek": "2026-W19",
+  "currentProgram": "workouts/2026-W19-program.md",
+  "currentSession": "workouts/2026-W19-session.md",
+  "currentLog": "logs/2026-W19-log.json",
   "exerciseReference": "exercises/reference.md",
   "historyLog": "logs/history.md",
   "programsIndex": "workouts/index.json",
   "programCycle": ["A", "B", "C", "D"],
-  "currentCycleWeek": "B",
+  "currentCycleWeek": "C",
   "cycleLabels": {
     "A": "Full Body — Push + Hinge",
     "B": "Full Body — Squat + Pull",
