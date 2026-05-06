@@ -17,6 +17,15 @@
       "program": "workouts/2026-W17-program.md",
       "session": "workouts/2026-W17-session.md",
       "log": "logs/2026-W17-log.json"
+    },
+    {
+      "week": "2026-W19",
+      "date": "2026-05-04",
+      "cycle": "C",
+      "label": "Unilateral + Hinge + Press",
+      "program": "workouts/2026-W19-program.md",
+      "session": "workouts/2026-W19-session.md",
+      "log": "logs/2026-W19-log.json"
     }
   ]
 }
