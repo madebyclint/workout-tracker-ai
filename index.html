@@ -21,6 +21,12 @@
 </head>
 <body>
 
+<!-- Pull-to-refresh indicator -->
+<div id="ptr-indicator">
+  <span class="ptr-arrow">↓</span>
+  <span class="ptr-label">Pull to refresh</span>
+</div>
+
 <header>
   <div class="header-top">
     <h1 style="cursor:pointer" onclick="window.location.href='/'">Workout Tracker</h1>
@@ -36,10 +42,6 @@
     <button class="tab-btn" data-tab="generate">Generate</button>
   </nav>
 </header>
-
-<div id="ptr" class="ptr" aria-hidden="true">
-  <div class="ptr-spinner"></div>
-</div>
 
 <main>
   <!-- PROGRAM TAB -->

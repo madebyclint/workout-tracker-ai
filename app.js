@@ -69,50 +69,62 @@ async function boot() {
 
 boot();
 
-// ─────────────────────────────────────
-//  Pull to Refresh
-// ─────────────────────────────────────
-(function initPTR() {
-  const el = document.getElementById('ptr');
-  const spinner = el.querySelector('.ptr-spinner');
-  const THRESHOLD = 72;
-  let startY = 0, pulling = false, refreshing = false;
+// ── Pull-to-refresh ───────────────────────────────────────────────────────────
+(function() {
+  const THRESHOLD  = 72;
+  const MAX_PULL   = 96;
+  const INDICATOR  = document.getElementById('ptr-indicator');
+  const LABEL      = INDICATOR.querySelector('.ptr-label');
+
+  let startY     = 0;
+  let pulling    = false;
+  let currentH   = 0;
+
+  function canPull() {
+    return window.scrollY === 0;
+  }
 
   document.addEventListener('touchstart', e => {
-    if (!refreshing && window.scrollY === 0) {
-      startY = e.touches[0].clientY;
-      pulling = true;
-    }
+    if (!canPull()) return;
+    startY  = e.touches[0].clientY;
+    pulling = false;
   }, { passive: true });
 
   document.addEventListener('touchmove', e => {
-    if (!pulling || refreshing) return;
+    if (startY === 0) return;
     const dy = e.touches[0].clientY - startY;
-    if (dy > 0) {
-      const pct = Math.min(dy / THRESHOLD, 1);
-      el.style.transition = 'none';
-      el.style.transform = `translateY(${(pct - 1) * 100}%)`;
-      spinner.style.transform = `rotate(${pct * 360}deg)`;
+    if (dy <= 0) { startY = 0; return; }
+    if (!canPull() && !pulling) { startY = 0; return; }
+    pulling = true;
+    currentH = Math.min(MAX_PULL, dy * 0.45);
+    INDICATOR.style.height = currentH + 'px';
+    if (currentH >= THRESHOLD) {
+      INDICATOR.classList.add('ptr-ready');
+      LABEL.textContent = 'Release to refresh';
+    } else {
+      INDICATOR.classList.remove('ptr-ready');
+      LABEL.textContent = 'Pull to refresh';
     }
   }, { passive: true });
 
-  document.addEventListener('touchend', async e => {
-    if (!pulling || refreshing) return;
+  document.addEventListener('touchend', () => {
+    if (!pulling) return;
     pulling = false;
-    const dy = e.changedTouches[0].clientY - startY;
-    if (dy >= THRESHOLD) {
-      refreshing = true;
-      el.style.transition = '';
-      el.style.transform = 'translateY(0)';
-      spinner.style.transform = '';
-      el.classList.add('spinning');
-      await boot();
-      el.classList.remove('spinning');
-      el.style.transform = '';
-      refreshing = false;
+    if (currentH >= THRESHOLD) {
+      INDICATOR.classList.remove('ptr-ready');
+      INDICATOR.classList.add('ptr-refreshing');
+      INDICATOR.style.height = '44px';
+      LABEL.textContent = 'Refreshing…';
+      setTimeout(() => boot().then(() => {
+        INDICATOR.classList.remove('ptr-refreshing');
+        INDICATOR.style.height = '0';
+        LABEL.textContent = 'Pull to refresh';
+      }), 400);
     } else {
-      el.style.transition = '';
-      el.style.transform = '';
+      INDICATOR.style.height = '0';
+      INDICATOR.classList.remove('ptr-ready');
     }
-  });
+    currentH = 0;
+    startY   = 0;
+  }, { passive: true });
 }());
