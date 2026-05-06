@@ -4,6 +4,7 @@
   "description": "Workout tracker with Railway PostgreSQL backend",
   "main": "server.js",
   "scripts": {
+    "build": "node scripts/build-version.js",
     "start": "node server.js",
     "dev": "node --watch server.js",
     "db:migrate": "node db/migrate.js",

@@ -167,18 +167,13 @@ app.post('/api/weeks', async (req, res) => {
 });
 
 // ─────────────────────────────────────
-//  Version info from git
+//  Version info (written at build time by scripts/build-version.js)
 // ─────────────────────────────────────
-const { execSync } = require('child_process');
 let _version = null;
 function getVersion() {
   if (_version) return _version;
   try {
-    const hash   = execSync('git rev-parse --short HEAD').toString().trim();
-    const full   = execSync('git rev-parse HEAD').toString().trim();
-    const date   = execSync('git log -1 --format=%ci').toString().trim();
-    const msg    = execSync('git log -1 --format=%s').toString().trim();
-    _version = { hash, full, date, message: msg };
+    _version = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json'), 'utf8'));
   } catch {
     _version = { hash: 'unknown', full: 'unknown', date: new Date().toISOString(), message: '' };
   }
