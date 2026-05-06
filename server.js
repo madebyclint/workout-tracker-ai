@@ -167,7 +167,7 @@ app.post('/api/weeks', async (req, res) => {
 });
 
 // ─────────────────────────────────────
-//  Version info (written at build time by scripts/build-version.js)
+//  Version info — read from version.json (committed to repo)
 // ─────────────────────────────────────
 let _version = null;
 function getVersion() {
@@ -175,7 +175,7 @@ function getVersion() {
   try {
     _version = JSON.parse(fs.readFileSync(path.join(__dirname, 'version.json'), 'utf8'));
   } catch {
-    _version = { hash: 'unknown', full: 'unknown', date: new Date().toISOString(), message: '' };
+    _version = { hash: 'dev', date: new Date().toISOString(), message: 'local dev' };
   }
   return _version;
 }

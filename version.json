@@ -1,0 +1,6 @@
+{
+  "hash": "d7a294c",
+  "full": "d7a294c22b005287668e6bd8f5598a2a772638de",
+  "date": "2026-05-06 13:41:45 -0400",
+  "message": "feat: implement build script to generate version.json for runtime version info"
+}
