@@ -96,7 +96,8 @@ boot();
     if (dy <= 0) { startY = 0; return; }
     if (!canPull() && !pulling) { startY = 0; return; }
     pulling = true;
-    currentH = Math.min(MAX_PULL, dy * 0.45);
+    // Dead zone: don't show indicator until pulled at least 12px
+    currentH = dy < 12 ? 0 : Math.min(MAX_PULL, (dy - 12) * 0.5);
     INDICATOR.style.height = currentH + 'px';
     if (currentH >= THRESHOLD) {
       INDICATOR.classList.add('ptr-ready');
