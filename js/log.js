@@ -116,12 +116,11 @@ async function renderLog() {
   // Collect sessions from all log files (most-recent first)
   const seen = new Set();
   try {
-    const index = await fetchJSON(_manifest?.programsIndex || 'workouts/index.json');
+    const index = await fetchJSON('/api/weeks');
     const weeks = [...(index.weeks || [])].reverse();
     for (const w of weeks) {
-      if (!w.log) continue;
       try {
-        const logFile = await fetchJSON(w.log);
+        const logFile = await fetchJSON(`/api/weeks/${w.week}/log`);
         if (logFile.session?.exercises && Object.values(logFile.session.exercises).some(v => v)) {
           const key = logFile.session.savedAt || w.week;
           if (!seen.has(key)) {
@@ -339,7 +338,7 @@ async function renderArchive() {
 
   const el = document.getElementById('archiveContent');
   try {
-    const index = await fetchJSON('workouts/index.json');
+    const index = await fetchJSON('/api/weeks');
     const weeks = index.weeks || [];
 
     if (!weeks.length) {
@@ -368,10 +367,7 @@ async function renderArchive() {
 
 async function loadArchivedWeek(weekId) {
   try {
-    const index = await fetchJSON('workouts/index.json');
-    const entry = (index.weeks || []).find(w => w.week === weekId);
-    if (!entry) return;
-    const md = await fetchText(entry.program);
+    const md = await fetchText(`/api/weeks/${weekId}/program`);
     document.getElementById('archiveContent').innerHTML =
       `<button onclick="renderArchive();_archiveLoaded=false;" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.78rem;margin-bottom:14px">← Back to archive</button>
        <div class="card ref-content">${mdToHtml(md)}</div>`;

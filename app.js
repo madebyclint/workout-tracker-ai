@@ -31,7 +31,7 @@ function showToast(msg) {
 // ─────────────────────────────────────
 async function boot() {
   try {
-    _manifest = await fetchJSON('data.json');
+    _manifest = await fetchJSON('/api/config');
 
     const cycleKey = _manifest.currentCycleWeek;
     document.getElementById('headerCycleBadge').textContent = `Week ${cycleKey}`;
@@ -39,8 +39,8 @@ async function boot() {
       `${_manifest.currentWeek} · ${_manifest.cycleLabels?.[cycleKey] || ''}`;
 
     const [programMd, refMd] = await Promise.all([
-      fetchText(_manifest.currentProgram),
-      fetchText(_manifest.exerciseReference)
+      fetchText(`/api/weeks/${_manifest.currentWeek}/program`),
+      fetchText('/api/reference')
     ]);
 
     _programText = programMd;

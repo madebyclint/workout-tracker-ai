@@ -3,6 +3,29 @@
   "date": "2026-04-20",
   "cycle": "B",
   "label": "Lower Body + Core",
+  "session": {
+    "savedAt": "2026-05-05T23:19:11.057Z",
+    "notes": "We replaced an roll out with Russian twist",
+    "exercises": {
+      "Dumbbell Bench Press": "complete",
+      "Incline Dumbbell Press": "complete",
+      "Dumbbell Shoulder Press (Standing)": "complete",
+      "Lateral Raises": "complete",
+      "Tricep Pushdown (Cable)": "skip",
+      "Dead Bug": "complete",
+      "Pallof Press": "skip",
+      "RKC Plank": "complete",
+      "Cable Woodchop (High to Low)": "skip",
+      "Hollow Body Hold": "skip",
+      "Goblet Squat": "complete",
+      "Lat Pulldown (Cable)": "complete",
+      "Hip Thrust (Glute Bridge)": "complete",
+      "Face Pull (Cable)": "complete",
+      "Bulgarian Split Squat": "complete",
+      "Ab Rollout (from knees)": "complete",
+      "Side Plank": "complete"
+    }
+  },
   "athletes": {
     "clint": {
       "bodyweight": 205,

@@ -4,11 +4,12 @@
 
 ---
 
-## 2026-W17 — Week B: Lower Body + Core (April 2026)
+## 2026-W17 — Week B: Lower Body + Core (May 5, 2026)
 
-_Session not yet completed. Log here after the workout._
+**Completed**: Goblet Squat, Lat Pulldown (Cable), Hip Thrust (Glute Bridge), Face Pull (Cable), Bulgarian Split Squat, Ab Rollout (from knees), Side Plank, Dead Bug, RKC Plank, Dumbbell Bench Press, Incline Dumbbell Press, Dumbbell Shoulder Press (Standing), Lateral Raises  
+**Skipped**: Tricep Pushdown (Cable), Pallof Press, Cable Woodchop (High to Low), Hollow Body Hold
 
-**Notes**:
+**Notes**: We replaced an ab rollout with Russian twist.
 
 **Adjustments for next B session**:
 

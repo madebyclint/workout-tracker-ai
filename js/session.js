@@ -118,14 +118,29 @@ function updateNotes(val) {
   saveSessionToURL();
 }
 
-function saveSession() {
+async function saveSession() {
   _sessionState.savedAt = new Date().toISOString();
   saveSessionToURL();
-  const url = new URL(window.location.href);
-  url.searchParams.set('session', encodeSession(_sessionState));
-  navigator.clipboard.writeText(url.toString()).catch(() => {});
-  _logLoaded = false;
-  showToast('Session saved & URL copied!');
+
+  const week = _manifest?.currentWeek;
+  if (week) {
+    try {
+      const res = await fetch(`/api/weeks/${week}/log`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(_sessionState),
+      });
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      _logLoaded = false;
+      showToast('Session saved!');
+    } catch (err) {
+      console.error('Failed to save to server:', err);
+      showToast('Saved to URL only (server error)');
+    }
+  } else {
+    _logLoaded = false;
+    showToast('Session saved to URL');
+  }
 }
 
 function shareSession() {
