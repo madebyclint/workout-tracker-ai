@@ -587,6 +587,10 @@ header {
   overflow: hidden;
   transition: height 0.1s;
   pointer-events: none;
+  visibility: hidden;
+}
+#ptr-indicator.ptr-active {
+  visibility: visible;
 }
 #ptr-indicator .ptr-arrow {
   font-size: 1rem;
@@ -601,6 +605,16 @@ header {
 }
 @keyframes ptr-spin {
   to { transform: rotate(360deg); }
+}
+
+/* ─── Release footer ─── */
+.release-footer {
+  text-align: center;
+  padding: 14px 20px calc(env(safe-area-inset-bottom, 0px) + 14px);
+  font-size: 0.68rem;
+  color: var(--text2);
+  opacity: 0.5;
+  letter-spacing: 0.3px;
 }
 
 /* ─── Misc ─── */

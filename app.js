@@ -69,6 +69,18 @@ async function boot() {
 
 boot();
 
+// ── Release label ─────────────────────────────────────────────────────────────
+(async function() {
+  try {
+    const v = await fetch('/api/version').then(r => r.json());
+    const d = new Date(v.date);
+    const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    document.getElementById('releaseLabel').textContent =
+      `v${v.hash} · ${formatted}`;
+  } catch { /* non-critical */ }
+}());
+
 // ── Pull-to-refresh ───────────────────────────────────────────────────────────
 (function() {
   const THRESHOLD  = 72;
@@ -98,6 +110,7 @@ boot();
     pulling = true;
     // Dead zone: don't show indicator until pulled at least 12px
     currentH = dy < 12 ? 0 : Math.min(MAX_PULL, (dy - 12) * 0.5);
+    if (currentH > 0) INDICATOR.classList.add('ptr-active');
     INDICATOR.style.height = currentH + 'px';
     if (currentH >= THRESHOLD) {
       INDICATOR.classList.add('ptr-ready');
@@ -117,13 +130,13 @@ boot();
       INDICATOR.style.height = '44px';
       LABEL.textContent = 'Refreshing…';
       setTimeout(() => boot().then(() => {
-        INDICATOR.classList.remove('ptr-refreshing');
+        INDICATOR.classList.remove('ptr-refreshing', 'ptr-active');
         INDICATOR.style.height = '0';
         LABEL.textContent = 'Pull to refresh';
       }), 400);
     } else {
       INDICATOR.style.height = '0';
-      INDICATOR.classList.remove('ptr-ready');
+      INDICATOR.classList.remove('ptr-ready', 'ptr-active');
     }
     currentH = 0;
     startY   = 0;

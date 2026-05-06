@@ -167,6 +167,26 @@ app.post('/api/weeks', async (req, res) => {
 });
 
 // ─────────────────────────────────────
+//  Version info from git
+// ─────────────────────────────────────
+const { execSync } = require('child_process');
+let _version = null;
+function getVersion() {
+  if (_version) return _version;
+  try {
+    const hash   = execSync('git rev-parse --short HEAD').toString().trim();
+    const full   = execSync('git rev-parse HEAD').toString().trim();
+    const date   = execSync('git log -1 --format=%ci').toString().trim();
+    const msg    = execSync('git log -1 --format=%s').toString().trim();
+    _version = { hash, full, date, message: msg };
+  } catch {
+    _version = { hash: 'unknown', full: 'unknown', date: new Date().toISOString(), message: '' };
+  }
+  return _version;
+}
+app.get('/api/version', (_req, res) => res.json(getVersion()));
+
+// ─────────────────────────────────────
 //  SPA fallback — serve index.html for
 //  any non-API, non-static route
 // ─────────────────────────────────────
