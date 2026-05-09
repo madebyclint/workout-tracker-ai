@@ -73,7 +73,9 @@ boot();
 (async function() {
   try {
     const v = await fetch('/api/version').then(r => r.json());
-    const d = new Date(v.date);
+    // Normalize git date format ("2026-05-06 13:53:24 -0400") to ISO 8601 for Safari
+    const isoDate = v.date.replace(' ', 'T').replace(/([+-]\d{2})(\d{2})$/, '$1:$2');
+    const d = new Date(isoDate);
     const formatted = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
       + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     document.getElementById('releaseLabel').textContent =

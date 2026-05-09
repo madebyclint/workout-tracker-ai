@@ -10,7 +10,7 @@ let version;
 try {
   const hash    = execSync('git rev-parse --short HEAD').toString().trim();
   const full    = execSync('git rev-parse HEAD').toString().trim();
-  const date    = execSync('git log -1 --format=%ci').toString().trim();
+    const date    = execSync('git log -1 --format=%cI').toString().trim(); // ISO 8601 with colon in tz
   const message = execSync('git log -1 --format=%s').toString().trim();
   version = { hash, full, date, message };
 } catch {
