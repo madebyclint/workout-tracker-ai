@@ -62,6 +62,159 @@ const EXERCISE_META = {
   'Bicycle Crunch':                     { cat:'core', sub:'Flexion' },
   'Hanging Knee Raise':                 { cat:'core', sub:'Flexion' },
   'Hanging Leg Raise (straight legs)':  { cat:'core', sub:'Flexion' },
+  // ── 12-Week Couples Program additions ──────────────────────
+  // Pull
+  'Cable Face Pull':                              { cat:'pull', sub:'Rear Delt' },
+  'Cable Face Pull with External Rotation':       { cat:'pull', sub:'Rear Delt' },
+  'Lat Pulldown (Wide Grip)':                     { cat:'pull', sub:'Back' },
+  'Lat Pulldown (Underhand Grip)':                { cat:'pull', sub:'Back' },
+  'Weighted Lat Pulldown with Hold':              { cat:'pull', sub:'Back' },
+  'Seated Cable Row (Wide Grip)':                 { cat:'pull', sub:'Back' },
+  'Seated Cable Row (close grip)':                { cat:'pull', sub:'Back' },
+  'Cable Row with Pause (mid-back squeeze)':      { cat:'pull', sub:'Back' },
+  'Half-Kneeling Cable Row':                      { cat:'pull', sub:'Back' },
+  'Half-Kneeling Single-Arm Cable Row':           { cat:'pull', sub:'Back' },
+  'Single-Arm Cable Row':                         { cat:'pull', sub:'Back' },
+  'Dumbbell Bent-Over Row':                       { cat:'pull', sub:'Back' },
+  'Chest-Supported Incline Row (DB)':             { cat:'pull', sub:'Back' },
+  'Landmine Row':                                 { cat:'pull', sub:'Back' },
+  'Reverse Lunge with Cable Row':                 { cat:'pull', sub:'Back' },
+  'Face Pull with Band':                          { cat:'pull', sub:'Rear Delt' },
+  'Cable Rear Delt Fly':                          { cat:'pull', sub:'Rear Delt' },
+  'Chin-Up (palms facing in)':                    { cat:'pull', sub:'Back' },
+  'Assisted Pull-Up':                             { cat:'pull', sub:'Back' },
+  'Neutral Grip Pull-Up or Pulldown':             { cat:'pull', sub:'Back' },
+  'Pull-Up (or Lat Pulldown)':                    { cat:'pull', sub:'Back' },
+  'Cable Straight-Arm Pulldown':                  { cat:'pull', sub:'Back' },
+  'Cable Lateral Raise':                          { cat:'push', sub:'Shoulder' },
+  // Push
+  'Dumbbell Lateral Raise':                       { cat:'push', sub:'Shoulder' },
+  'Dumbbell Shoulder Press (seated)':             { cat:'push', sub:'Shoulder' },
+  'Standing DB Shoulder Press':                   { cat:'push', sub:'Shoulder' },
+  'Arnold Press (seated)':                        { cat:'push', sub:'Shoulder' },
+  'Landmine Press (single arm)':                  { cat:'push', sub:'Shoulder' },
+  'Push Press (DB)':                              { cat:'push', sub:'Shoulder' },
+  'Dumbbell Z-Press (seated on floor)':           { cat:'push', sub:'Shoulder' },
+  'Seated DB Press with Rotation':                { cat:'push', sub:'Shoulder' },
+  'Cable Chest Press (single arm, standing)':     { cat:'push', sub:'Chest' },
+  'Cable Chest Press (bilateral, standing)':      { cat:'push', sub:'Chest' },
+  'Cable Fly (chest)':                            { cat:'push', sub:'Chest' },
+  'Cable Crossover Fly':                          { cat:'push', sub:'Chest' },
+  'Cable Fly (mid height)':                       { cat:'push', sub:'Chest' },
+  'Dumbbell Chest Fly (flat bench)':              { cat:'push', sub:'Chest' },
+  'Dumbbell Floor Press':                         { cat:'push', sub:'Chest' },
+  'Dumbbell Decline Press':                       { cat:'push', sub:'Chest' },
+  'Assisted Pull-Up or Cable Pulldown (neutral grip)': { cat:'pull', sub:'Back' },
+  // Legs: Quad
+  'Leg Press':                                    { cat:'legs', sub:'Quad' },
+  'Leg Press (single leg)':                       { cat:'legs', sub:'Quad' },
+  'Barbell Back Squat (or Goblet)':               { cat:'legs', sub:'Quad' },
+  'Barbell Back Squat':                           { cat:'legs', sub:'Quad' },
+  'Barbell Squat with 2-sec Pause':               { cat:'legs', sub:'Quad' },
+  'Dumbbell Front Squat':                         { cat:'legs', sub:'Quad' },
+  'Goblet Squat with 2-sec Pause at Bottom':      { cat:'legs', sub:'Quad' },
+  'Bulgarian Split Squat (DB)':                   { cat:'legs', sub:'Quad' },
+  'Bulgarian Split Squat (DB, heavy)':            { cat:'legs', sub:'Quad' },
+  'Bulgarian Split Squat (heaviest yet)':         { cat:'legs', sub:'Quad' },
+  'Front Foot Elevated Split Squat':              { cat:'legs', sub:'Quad' },
+  'Dumbbell Walking Lunge':                       { cat:'legs', sub:'Quad' },
+  'Reverse Lunge (DB)':                           { cat:'legs', sub:'Quad' },
+  'Lateral Lunge (DB)':                           { cat:'legs', sub:'Quad' },
+  'Lateral Lunge to Curtsy Lunge':                { cat:'legs', sub:'Quad' },
+  'Step-Up with Knee Drive (DB)':                 { cat:'legs', sub:'Quad' },
+  'Weighted Step-Up (high bench)':                { cat:'legs', sub:'Quad' },
+  'Weighted Step-Up to Balance':                  { cat:'legs', sub:'Quad' },
+  'Reverse Lunge with Knee Drive (weighted)':     { cat:'legs', sub:'Quad' },
+  'Sumo Squat with KB':                           { cat:'legs', sub:'Quad' },
+  // Legs: Glute
+  'Hip Thrust':                                   { cat:'legs', sub:'Glute' },
+  'Hip Thrust (Glute Bridge)':                    { cat:'legs', sub:'Glute' },
+  'Barbell Hip Thrust':                           { cat:'legs', sub:'Glute' },
+  'Single-Leg Hip Thrust (bench)':                { cat:'legs', sub:'Glute' },
+  'Glute Bridge':                                 { cat:'legs', sub:'Glute' },
+  'Cable Kickback':                               { cat:'legs', sub:'Glute' },
+  'Cable Kickback (glute)':                       { cat:'legs', sub:'Glute' },
+  'Cable Pull-Through (glute focus)':             { cat:'legs', sub:'Glute' },
+  'Single-Leg Glute Bridge on Bench':             { cat:'legs', sub:'Glute' },
+  // Legs: Hinge
+  'Romanian Deadlift (DB)':                       { cat:'legs', sub:'Hinge' },
+  'Romanian Deadlift (heavy)':                    { cat:'legs', sub:'Hinge' },
+  'Trap Bar Deadlift':                            { cat:'legs', sub:'Hinge' },
+  'Trap Bar Deadlift (heavy)':                    { cat:'legs', sub:'Hinge' },
+  'Trap Bar or DB Deadlift':                      { cat:'legs', sub:'Hinge' },
+  'Conventional Deadlift':                        { cat:'legs', sub:'Hinge' },
+  'Conventional Deadlift (near max)':             { cat:'legs', sub:'Hinge' },
+  'Sumo Deadlift (DB or barbell)':                { cat:'legs', sub:'Hinge' },
+  'Dumbbell Deadlift':                            { cat:'legs', sub:'Hinge' },
+  'Deficit RDL (standing on plate)':              { cat:'legs', sub:'Hinge' },
+  'Single-Leg Romanian Deadlift (DB)':            { cat:'legs', sub:'Hinge' },
+  'Single-Leg Deadlift (KB)':                     { cat:'legs', sub:'Hinge' },
+  'Good Morning (bar or DB)':                     { cat:'legs', sub:'Hinge' },
+  'Lying Leg Curl':                               { cat:'legs', sub:'Hinge' },
+  'Hip Hinge Drill':                              { cat:'legs', sub:'Hinge' },
+  // Legs: Power
+  'Jump Rope or Rowing Machine':                  { cat:'legs', sub:'Power' },
+  'Sled Push or Kettlebell Swing':                { cat:'legs', sub:'Power' },
+  'KB Swing to Goblet Squat (combo)':             { cat:'legs', sub:'Power' },
+  'Kettlebell Swing':                             { cat:'legs', sub:'Power' },
+  'Pendlay Row (explosive)':                      { cat:'pull', sub:'Back' },
+  // Core
+  'Ab Wheel Rollout (kneeling)':                  { cat:'core', sub:'Flexion' },
+  'Ab Wheel Rollout':                             { cat:'core', sub:'Flexion' },
+  'Ab Wheel Rollout (feet elevated on bench)':    { cat:'core', sub:'Flexion' },
+  'Ab Wheel Full Rollout':                        { cat:'core', sub:'Flexion' },
+  'Ab Wheel Rollout from Feet (full)':            { cat:'core', sub:'Flexion' },
+  'Kneeling Cable Crunch':                        { cat:'core', sub:'Flexion' },
+  'Kneeling Cable Crunch with Rotation':          { cat:'core', sub:'Anti-Rot' },
+  'Hanging Leg Raise (straight legs)':            { cat:'core', sub:'Flexion' },
+  'Hanging Leg Raise':                            { cat:'core', sub:'Flexion' },
+  'Hanging Windshield Wiper':                     { cat:'core', sub:'Anti-Rot' },
+  'Hanging Leg Raise with Twist':                 { cat:'core', sub:'Anti-Rot' },
+  'Hanging Knee Raise (slow)':                    { cat:'core', sub:'Flexion' },
+  'Slow Leg Raise with Hip Pop':                  { cat:'core', sub:'Flexion' },
+  'Lying Leg Raise':                              { cat:'core', sub:'Flexion' },
+  'Leg Raise (Flat Bench)':                       { cat:'core', sub:'Flexion' },
+  'V-Up':                                         { cat:'core', sub:'Flexion' },
+  'V-Up with Hold':                               { cat:'core', sub:'Flexion' },
+  'Hollow Body Rock':                             { cat:'core', sub:'Stability' },
+  'Plank to Down Dog':                            { cat:'core', sub:'Stability' },
+  'Bear Crawl':                                   { cat:'core', sub:'Stability' },
+  'Dragon Flag Negative (slow lower)':            { cat:'core', sub:'Flexion' },
+  'Dragon Flag (controlled)':                     { cat:'core', sub:'Flexion' },
+  'RKC Plank':                                    { cat:'core', sub:'Stability' },
+  'Stir the Pot (forearm plank, circles)':        { cat:'core', sub:'Stability' },
+  'Stir the Pot (slow)':                          { cat:'core', sub:'Stability' },
+  'Side Plank with Hip Lift':                     { cat:'core', sub:'Stability' },
+  'Side Plank with Reach Through':                { cat:'core', sub:'Stability' },
+  'Side Plank with Cable Row':                    { cat:'core', sub:'Stability' },
+  'Side Plank with Cable Pull':                   { cat:'core', sub:'Stability' },
+  'Side Plank with Hip Abduction':                { cat:'core', sub:'Stability' },
+  'Plank with Alternating Leg Lift':              { cat:'core', sub:'Stability' },
+  'Plank to Push-Up':                             { cat:'core', sub:'Stability' },
+  'Plank Hold':                                   { cat:'core', sub:'Stability' },
+  'Side Plank':                                   { cat:'core', sub:'Stability' },
+  'Copenhagen Plank (inner thigh)':               { cat:'core', sub:'Stability' },
+  'Copenhagen Plank':                             { cat:'core', sub:'Stability' },
+  'Dead Bug with Dumbbell (arm only)':            { cat:'core', sub:'Stability' },
+  'Dead Bug with Band Pull':                      { cat:'core', sub:'Stability' },
+  'Breathing Dead Bug (slow)':                    { cat:'core', sub:'Stability' },
+  'Bird Dog':                                     { cat:'core', sub:'Stability' },
+  'Slow Bird Dog':                                { cat:'core', sub:'Stability' },
+  'Pallof Press with Squat':                      { cat:'core', sub:'Anti-Rot' },
+  'Pallof Press Squat to Press':                  { cat:'core', sub:'Anti-Rot' },
+  'Pallof Press Lunge':                           { cat:'core', sub:'Anti-Rot' },
+  'Pallof Press with Overhead Reach':             { cat:'core', sub:'Anti-Rot' },
+  'Kneeling Pallof Press (kneeling)':             { cat:'core', sub:'Anti-Rot' },
+  'Tall Kneeling Pallof Press':                   { cat:'core', sub:'Anti-Rot' },
+  'Cable Pallof Press (kneeling)':                { cat:'core', sub:'Anti-Rot' },
+  'Cable Woodchop (Low to High, kneeling)':       { cat:'core', sub:'Anti-Rot' },
+  'Cable Woodchop (standing, fast)':              { cat:'core', sub:'Anti-Rot' },
+  'Side Bend (Cable, single arm)':                { cat:'core', sub:'Anti-Rot' },
+  'Hollow Body to Superman Roll':                 { cat:'core', sub:'Stability' },
+  'Lying Windshield Wipers (knees bent)':         { cat:'core', sub:'Anti-Rot' },
+  'Lying Windshield Wipers (straight legs)':      { cat:'core', sub:'Anti-Rot' },
+  'Reverse Crunch':                               { cat:'core', sub:'Flexion' },
+  'Reverse Crunch with Hip Lift':                 { cat:'core', sub:'Flexion' },
 };
 
 // Returns { cat, sub } — falls back gracefully for unknown exercises
@@ -342,21 +495,77 @@ async function renderArchive() {
     const weeks = index.weeks || [];
 
     if (!weeks.length) {
-      el.innerHTML = '<div class="empty-state"><div class="icon">📅</div>No past sessions yet.</div>';
+      el.innerHTML = '<div class="empty-state"><div class="icon">📅</div>No sessions yet.</div>';
       return;
     }
 
-    const sorted = [...weeks].reverse();
-    let html = `<div class="card-title" style="padding:0 4px 8px">Past Sessions</div>`;
+    const currentWeek = _manifest?.currentWeek;
 
-    for (const w of sorted) {
-      html += `<div class="history-item" onclick="loadArchivedWeek('${w.week}')">
-        <div class="history-item-header">
-          <span class="history-week">${w.week}</span>
-          <span class="history-date">${w.date}</span>
+    // Group into phases — ascending order (Phase 1 first, Week 1 first)
+    const phaseOrder = ['Phase 1 — Foundation', 'Phase 2 — Build', 'Phase 3 — Peak', 'Previous Program'];
+    const groups = { 'Phase 1 — Foundation': [], 'Phase 2 — Build': [], 'Phase 3 — Peak': [], 'Previous Program': [] };
+    for (const w of weeks) {
+      if (w.label.includes('Phase 1'))      groups['Phase 1 — Foundation'].push(w);
+      else if (w.label.includes('Phase 2')) groups['Phase 2 — Build'].push(w);
+      else if (w.label.includes('Phase 3')) groups['Phase 3 — Peak'].push(w);
+      else                                  groups['Previous Program'].push(w);
+    }
+
+    const cycleTag = { A: 'tag-push', B: 'tag-pull', C: 'tag-core' };
+    const cycleTitle = { A: 'Workout A', B: 'Workout B', C: 'Recovery' };
+
+    // Summary counts
+    const totalDone  = weeks.filter(w => w.has_log).length;
+    const countA     = weeks.filter(w => w.cycle === 'A' && w.has_log).length;
+    const countB     = weeks.filter(w => w.cycle === 'B' && w.has_log).length;
+    const countC     = weeks.filter(w => w.cycle === 'C' && w.has_log).length;
+
+    let html = `
+      <div class="archive-summary-card">
+        <div class="archive-summary-title">Total Workouts Done</div>
+        <div class="archive-summary-total">${totalDone}</div>
+        <div class="archive-summary-row">
+          <span class="archive-summary-item"><span class="tag tag-push" style="font-size:0.55rem;padding:2px 6px">A</span> ${countA} Push + Core</span>
+          <span class="archive-summary-item"><span class="tag tag-pull" style="font-size:0.55rem;padding:2px 6px">B</span> ${countB} Pull + Hinge</span>
+          <span class="archive-summary-item"><span class="tag tag-core" style="font-size:0.55rem;padding:2px 6px">C</span> ${countC} Recovery</span>
         </div>
-        <div class="history-cycle">Week ${w.cycle} — ${w.label}</div>
       </div>`;
+
+    for (const groupName of phaseOrder) {
+      const groupWeeks = groups[groupName];
+      if (!groupWeeks.length) continue;
+      const done  = groupWeeks.filter(w => w.has_log).length;
+      const total = groupWeeks.length;
+      const pct   = total ? Math.round(done / total * 100) : 0;
+      html += `
+        <div class="archive-phase-header">
+          <span>${groupName}</span>
+          <span class="archive-phase-count">${done} / ${total}</span>
+        </div>
+        <div class="archive-phase-bar"><div class="archive-phase-bar-fill" style="width:${pct}%"></div></div>`;
+      for (const w of groupWeeks) {
+        const isActive = w.week === currentWeek;
+        const shortLabel = w.label.replace(/Phase \d+ — /, '');
+        const tagClass = cycleTag[w.cycle] || 'tag-core';
+        html += `
+          <div class="history-item${isActive ? ' history-item-active' : ''}" onclick="loadArchivedWeek('${w.week}')">
+            <div class="history-item-header">
+              <span class="history-week">${w.week}</span>
+              <span class="history-date">${w.date}</span>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px">
+              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+                <span class="tag ${tagClass}" style="font-size:0.58rem;padding:2px 7px">${cycleTitle[w.cycle] || w.cycle}</span>
+                <span class="history-cycle">${shortLabel}</span>
+                ${isActive ? '<span class="archive-active-badge">● ACTIVE</span>' : ''}
+                ${w.has_log && !isActive ? '<span class="archive-done-badge">✓ Done</span>' : ''}
+              </div>
+              <button class="activate-btn" onclick="event.stopPropagation();activateSession('${w.week}','${w.cycle}')" ${isActive ? 'disabled' : ''}>
+                ${isActive ? 'Active' : 'Activate'}
+              </button>
+            </div>
+          </div>`;
+      }
     }
 
     el.innerHTML = html;
@@ -365,14 +574,29 @@ async function renderArchive() {
   }
 }
 
+async function activateSession(weekId, cycle) {
+  try {
+    const r = await fetch('/api/config/current-week', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ week: weekId })
+    });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    showToast('Session activated — reloading…');
+    setTimeout(() => window.location.href = '/', 1000);
+  } catch (e) {
+    showToast('Could not activate: ' + e.message);
+  }
+}
+
 async function loadArchivedWeek(weekId) {
   try {
     const md = await fetchText(`/api/weeks/${weekId}/program`);
     document.getElementById('archiveContent').innerHTML =
-      `<button onclick="renderArchive();_archiveLoaded=false;" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.78rem;margin-bottom:14px">← Back to archive</button>
+      `<button onclick="renderArchive();_archiveLoaded=false;" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.78rem;margin-bottom:14px">← Back to sessions</button>
        <div class="card ref-content">${mdToHtml(md)}</div>`;
   } catch (e) {
-    showToast("Could not load that week's program");
+    showToast("Could not load that session's program");
   }
 }
 

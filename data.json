@@ -1,21 +1,50 @@
 {
-  "currentWeek": "2026-W19",
-  "currentProgram": "workouts/2026-W19-program.md",
-  "currentSession": "workouts/2026-W19-session.md",
-  "currentLog": "logs/2026-W19-log.json",
+  "currentWeek": "2026-W24-A",
+  "currentProgram": "workouts/workout-1A.md",
+  "currentSession": null,
+  "currentLog": null,
   "exerciseReference": "exercises/reference.md",
   "historyLog": "logs/history.md",
   "programsIndex": "workouts/index.json",
-  "programCycle": ["A", "B", "C", "D"],
-  "currentCycleWeek": "C",
+  "programCycle": [
+    "A",
+    "B",
+    "C"
+  ],
+  "currentCycleWeek": "A",
   "cycleLabels": {
-    "A": "Full Body — Push + Hinge",
-    "B": "Full Body — Squat + Pull",
-    "C": "Full Body — Unilateral",
-    "D": "Full Body — Power + Carry"
+    "A": "Workout A",
+    "B": "Workout B",
+    "C": "Active Recovery"
   },
   "athletes": {
-    "clint": { "name": "Clint", "height": "5'7\"", "weight": 205 },
-    "wife": { "name": "Wife", "height": "5'3\"", "weight": 110 }
+    "clint": {
+      "name": "Clint",
+      "height": "5'7\"",
+      "weight": 206
+    },
+    "wife": {
+      "name": "Wife",
+      "height": "5'3\"",
+      "weight": 118
+    }
+  },
+  "program": {
+    "name": "12-Week Couples Program",
+    "description": "Full body balance · weight loss + lean muscle · 2–3x/week · NYC commercial gym",
+    "phases": [
+      {
+        "name": "Phase 1 — Foundation",
+        "weeks": "1–4"
+      },
+      {
+        "name": "Phase 2 — Build",
+        "weeks": "5–8"
+      },
+      {
+        "name": "Phase 3 — Peak",
+        "weeks": "9–12"
+      }
+    ]
   }
 }

@@ -535,6 +535,102 @@ header {
   transition: border-color 0.15s;
 }
 .history-item:hover { border-color: var(--accent); }
+.history-item-active {
+  border-color: var(--green) !important;
+  background: rgba(62, 207, 142, 0.06);
+}
+.archive-active-badge {
+  font-size: 0.6rem;
+  color: var(--green);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.archive-done-badge {
+  font-size: 0.6rem;
+  color: var(--text2);
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+.archive-phase-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.archive-phase-count {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+.archive-phase-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.archive-phase-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+.archive-summary-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  text-align: center;
+}
+.archive-summary-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text2);
+  margin-bottom: 4px;
+}
+.archive-summary-total {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.1;
+  margin-bottom: 10px;
+}
+.archive-summary-row {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.archive-summary-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.72rem;
+  color: var(--text2);
+}
+.activate-btn {
+  flex-shrink: 0;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+}
+.activate-btn:hover { opacity: 0.85; }
+.activate-btn:disabled {
+  background: var(--border);
+  color: var(--text2);
+  cursor: default;
+  opacity: 1;
+}
 .history-item-header {
   display: flex;
   justify-content: space-between;

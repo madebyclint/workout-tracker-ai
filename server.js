@@ -38,9 +38,13 @@ app.get('/api/config', async (req, res) => {
 // ─────────────────────────────────────
 app.get('/api/weeks', async (req, res) => {
   try {
-    const result = await pool.query(
-      'SELECT week, date, cycle, label FROM weeks ORDER BY date ASC'
-    );
+    const result = await pool.query(`
+      SELECT w.week, w.date, w.cycle, w.label,
+             (sl.week IS NOT NULL) AS has_log
+      FROM weeks w
+      LEFT JOIN session_logs sl ON w.week = sl.week
+      ORDER BY w.date ASC
+    `);
     res.json({ weeks: result.rows });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -161,6 +165,26 @@ app.post('/api/weeks', async (req, res) => {
     );
 
     res.status(201).json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────
+//  API: Activate / switch current session
+// ─────────────────────────────────────
+app.put('/api/config/current-week', async (req, res) => {
+  try {
+    const { week } = req.body;
+    if (!week) return res.status(400).json({ error: 'week is required' });
+    const result = await pool.query('SELECT cycle FROM weeks WHERE week = $1', [week]);
+    if (!result.rows.length) return res.status(404).json({ error: 'Week not found' });
+    const { cycle } = result.rows[0];
+    await pool.query(
+      `UPDATE config SET value = value || $1::jsonb WHERE key = 'manifest'`,
+      [JSON.stringify({ currentWeek: week, currentCycleWeek: cycle })]
+    );
+    res.json({ success: true, currentWeek: week, currentCycleWeek: cycle });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
