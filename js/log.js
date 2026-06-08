@@ -485,6 +485,13 @@ function renderReference(md) {
 // ─────────────────────────────────────
 //  Render ARCHIVE tab
 // ─────────────────────────────────────
+// Sort key: "2026-W24-A" → "2026-24-A" (week padded to 2 digits)
+function _weekSortKey(w) {
+  const m = w.week.match(/^(\d{4})-W(\d+)(?:-([A-Z]))?$/);
+  if (!m) return '0000-00-Z';
+  return `${m[1]}-${m[2].padStart(2, '0')}-${m[3] || 'A'}`;
+}
+
 async function renderArchive() {
   if (_archiveLoaded) return;
   _archiveLoaded = true;
@@ -492,7 +499,8 @@ async function renderArchive() {
   const el = document.getElementById('archiveContent');
   try {
     const index = await fetchJSON('/api/weeks');
-    const weeks = index.weeks || [];
+    const weeks = (index.weeks || []).slice().sort((a, b) =>
+      _weekSortKey(a).localeCompare(_weekSortKey(b)));
 
     if (!weeks.length) {
       el.innerHTML = '<div class="empty-state"><div class="icon">📅</div>No sessions yet.</div>';
@@ -501,24 +509,21 @@ async function renderArchive() {
 
     const currentWeek = _manifest?.currentWeek;
 
-    // Group into phases — ascending order (Phase 1 first, Week 1 first)
-    const phaseOrder = ['Phase 1 — Foundation', 'Phase 2 — Build', 'Phase 3 — Peak', 'Previous Program'];
-    const groups = { 'Phase 1 — Foundation': [], 'Phase 2 — Build': [], 'Phase 3 — Peak': [], 'Previous Program': [] };
-    for (const w of weeks) {
-      if (w.label.includes('Phase 1'))      groups['Phase 1 — Foundation'].push(w);
-      else if (w.label.includes('Phase 2')) groups['Phase 2 — Build'].push(w);
-      else if (w.label.includes('Phase 3')) groups['Phase 3 — Peak'].push(w);
-      else                                  groups['Previous Program'].push(w);
-    }
+    // Suggested next: first unlogged session after the last logged one
+    let lastLoggedIdx = -1;
+    for (let i = 0; i < weeks.length; i++) if (weeks[i].has_log) lastLoggedIdx = i;
+    const suggestedWeek = lastLoggedIdx >= 0
+      ? weeks.slice(lastLoggedIdx + 1).find(w => !w.has_log)
+      : weeks.find(w => !w.has_log);
 
-    const cycleTag = { A: 'tag-push', B: 'tag-pull', C: 'tag-core' };
+    const cycleTag   = { A: 'tag-push', B: 'tag-pull', C: 'tag-core' };
     const cycleTitle = { A: 'Workout A', B: 'Workout B', C: 'Recovery' };
 
     // Summary counts
-    const totalDone  = weeks.filter(w => w.has_log).length;
-    const countA     = weeks.filter(w => w.cycle === 'A' && w.has_log).length;
-    const countB     = weeks.filter(w => w.cycle === 'B' && w.has_log).length;
-    const countC     = weeks.filter(w => w.cycle === 'C' && w.has_log).length;
+    const totalDone = weeks.filter(w => w.has_log).length;
+    const countA    = weeks.filter(w => w.cycle === 'A' && w.has_log).length;
+    const countB    = weeks.filter(w => w.cycle === 'B' && w.has_log).length;
+    const countC    = weeks.filter(w => w.cycle === 'C' && w.has_log).length;
 
     let html = `
       <div class="archive-summary-card">
@@ -531,41 +536,72 @@ async function renderArchive() {
         </div>
       </div>`;
 
-    for (const groupName of phaseOrder) {
-      const groupWeeks = groups[groupName];
-      if (!groupWeeks.length) continue;
-      const done  = groupWeeks.filter(w => w.has_log).length;
-      const total = groupWeeks.length;
-      const pct   = total ? Math.round(done / total * 100) : 0;
+    // Suggested next banner
+    if (suggestedWeek) {
+      const shortLabel = suggestedWeek.label.replace(/Phase \d+ — /, '');
+      const tagClass   = cycleTag[suggestedWeek.cycle] || 'tag-core';
       html += `
-        <div class="archive-phase-header">
-          <span>${groupName}</span>
-          <span class="archive-phase-count">${done} / ${total}</span>
-        </div>
-        <div class="archive-phase-bar"><div class="archive-phase-bar-fill" style="width:${pct}%"></div></div>`;
-      for (const w of groupWeeks) {
-        const isActive = w.week === currentWeek;
-        const shortLabel = w.label.replace(/Phase \d+ — /, '');
-        const tagClass = cycleTag[w.cycle] || 'tag-core';
+        <div class="archive-suggestion-card">
+          <div class="archive-suggestion-label">▶ Suggested Next</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="tag ${tagClass}" style="font-size:0.58rem;padding:2px 7px">${cycleTitle[suggestedWeek.cycle] || suggestedWeek.cycle}</span>
+              <span style="font-size:0.78rem;font-weight:600;color:var(--text)">${shortLabel}</span>
+              <span style="font-size:0.66rem;color:var(--text2)">${suggestedWeek.week}</span>
+            </div>
+            <button class="activate-btn" onclick="activateSession('${suggestedWeek.week}')">Activate</button>
+          </div>
+        </div>`;
+    }
+
+    // Flat sorted list with phase section dividers
+    let lastPhaseGroup = null;
+    for (const w of weeks) {
+      const phaseMatch = w.label.match(/Phase (\d+)/);
+      const phaseGroup = phaseMatch
+        ? ['', 'Phase 1 — Foundation', 'Phase 2 — Build', 'Phase 3 — Peak'][+phaseMatch[1]]
+        : 'Previous Program';
+
+      if (phaseGroup !== lastPhaseGroup) {
+        const groupWeeks = weeks.filter(x => {
+          const pm = x.label.match(/Phase (\d+)/);
+          return (pm ? ['','Phase 1 — Foundation','Phase 2 — Build','Phase 3 — Peak'][+pm[1]] : 'Previous Program') === phaseGroup;
+        });
+        const done  = groupWeeks.filter(x => x.has_log).length;
+        const total = groupWeeks.length;
+        const pct   = total ? Math.round(done / total * 100) : 0;
         html += `
-          <div class="history-item${isActive ? ' history-item-active' : ''}" onclick="loadArchivedWeek('${w.week}')">
-            <div class="history-item-header">
-              <span class="history-week">${w.week}</span>
-              <span class="history-date">${w.date}</span>
-            </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px">
-              <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-                <span class="tag ${tagClass}" style="font-size:0.58rem;padding:2px 7px">${cycleTitle[w.cycle] || w.cycle}</span>
-                <span class="history-cycle">${shortLabel}</span>
-                ${isActive ? '<span class="archive-active-badge">● ACTIVE</span>' : ''}
-                ${w.has_log && !isActive ? '<span class="archive-done-badge">✓ Done</span>' : ''}
-              </div>
-              <button class="activate-btn" onclick="event.stopPropagation();activateSession('${w.week}','${w.cycle}')" ${isActive ? 'disabled' : ''}>
-                ${isActive ? 'Active' : 'Activate'}
-              </button>
-            </div>
-          </div>`;
+          <div class="archive-phase-header" style="margin-top:${lastPhaseGroup ? '20px' : '4px'}">
+            <span>${phaseGroup}</span>
+            <span class="archive-phase-count">${done} / ${total}</span>
+          </div>
+          <div class="archive-phase-bar"><div class="archive-phase-bar-fill" style="width:${pct}%"></div></div>`;
+        lastPhaseGroup = phaseGroup;
       }
+
+      const isActive    = w.week === currentWeek;
+      const isSuggested = !!suggestedWeek && w.week === suggestedWeek.week;
+      const shortLabel  = w.label.replace(/Phase \d+ — /, '');
+      const tagClass    = cycleTag[w.cycle] || 'tag-core';
+      html += `
+        <div class="history-item${isActive ? ' history-item-active' : isSuggested ? ' history-item-suggested' : ''}" onclick="loadArchivedWeek('${w.week}')">
+          <div class="history-item-header">
+            <span class="history-week">${w.week}</span>
+            <span class="history-date">${w.date}</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="tag ${tagClass}" style="font-size:0.58rem;padding:2px 7px">${cycleTitle[w.cycle] || w.cycle}</span>
+              <span class="history-cycle">${shortLabel}</span>
+              ${isActive    ? '<span class="archive-active-badge">● ACTIVE</span>' : ''}
+              ${isSuggested && !isActive ? '<span class="archive-suggestion-badge">▶ UP NEXT</span>' : ''}
+              ${w.has_log && !isActive ? '<span class="archive-done-badge">✓ Done</span>' : ''}
+            </div>
+            <button class="activate-btn" onclick="event.stopPropagation();activateSession('${w.week}')" ${isActive ? 'disabled' : ''}>
+              ${isActive ? 'Active' : 'Activate'}
+            </button>
+          </div>
+        </div>`;
     }
 
     el.innerHTML = html;
@@ -574,7 +610,7 @@ async function renderArchive() {
   }
 }
 
-async function activateSession(weekId, cycle) {
+async function activateSession(weekId) {
   try {
     const r = await fetch('/api/config/current-week', {
       method: 'PUT',
@@ -593,7 +629,7 @@ async function loadArchivedWeek(weekId) {
   try {
     const md = await fetchText(`/api/weeks/${weekId}/program`);
     document.getElementById('archiveContent').innerHTML =
-      `<button onclick="renderArchive();_archiveLoaded=false;" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.78rem;margin-bottom:14px">← Back to sessions</button>
+      `<button onclick="_archiveLoaded=false;renderArchive();" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.78rem;margin-bottom:14px">← Back to sessions</button>
        <div class="card ref-content">${mdToHtml(md)}</div>`;
   } catch (e) {
     showToast("Could not load that session's program");

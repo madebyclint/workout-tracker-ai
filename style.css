@@ -539,6 +539,10 @@ header {
   border-color: var(--green) !important;
   background: rgba(62, 207, 142, 0.06);
 }
+.history-item-suggested {
+  border-color: var(--accent) !important;
+  background: rgba(99, 179, 237, 0.06);
+}
 .archive-active-badge {
   font-size: 0.6rem;
   color: var(--green);
@@ -550,6 +554,26 @@ header {
   color: var(--text2);
   font-weight: 600;
   letter-spacing: 0.3px;
+}
+.archive-suggestion-badge {
+  font-size: 0.6rem;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.archive-suggestion-card {
+  background: rgba(99, 179, 237, 0.08);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.archive-suggestion-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
 }
 
 .archive-phase-header {
