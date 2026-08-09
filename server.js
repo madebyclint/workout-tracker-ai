@@ -217,18 +217,17 @@ app.get('/api/version', (_req, res) => res.json(getVersion()));
 // ─────────────────────────────────────
 //  MCP connector — lets Claude (via a claude.ai remote connector) read
 //  weeks/logs and create/update week programs. OAuth-protected (see
-//  mcp/auth.js); disabled unless all required env vars are set, so local
-//  dev without OAuth config still runs the rest of the app fine.
+//  mcp/auth.js) with Dynamic Client Registration, so claude.ai self-registers
+//  on add — no client ID/secret or redirect_uri to configure by hand.
+//  Disabled unless required env vars are set, so local dev without OAuth
+//  config still runs the rest of the app fine.
 // ─────────────────────────────────────
-const { APP_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_LOGIN_PASSWORD, OAUTH_REDIRECT_URIS } = process.env;
+const { APP_URL, OAUTH_LOGIN_PASSWORD } = process.env;
 
-if (APP_URL && OAUTH_CLIENT_ID && OAUTH_CLIENT_SECRET && OAUTH_LOGIN_PASSWORD && OAUTH_REDIRECT_URIS) {
+if (APP_URL && OAUTH_LOGIN_PASSWORD) {
   const issuerUrl = new URL(APP_URL);
   const resourceServerUrl = new URL('/mcp', APP_URL);
-  const { provider, loginRouter } = createAuthProvider({
-    clientId: OAUTH_CLIENT_ID,
-    clientSecret: OAUTH_CLIENT_SECRET,
-    redirectUris: OAUTH_REDIRECT_URIS.split(',').map(s => s.trim()),
+  const { provider, loginRouter, clientRegistrationOptions } = createAuthProvider({
     loginPassword: OAUTH_LOGIN_PASSWORD,
   });
 
@@ -237,7 +236,7 @@ if (APP_URL && OAUTH_CLIENT_ID && OAUTH_CLIENT_SECRET && OAUTH_LOGIN_PASSWORD &&
   // /authorize/login too and would otherwise consume the request body
   // first and fall through, breaking our own urlencoded() parsing.
   app.use(loginRouter);
-  app.use(mcpAuthRouter({ provider, issuerUrl, resourceServerUrl }));
+  app.use(mcpAuthRouter({ provider, issuerUrl, resourceServerUrl, clientRegistrationOptions }));
 
   const requireAuth = requireBearerAuth({
     verifier: provider,
@@ -273,7 +272,7 @@ if (APP_URL && OAUTH_CLIENT_ID && OAUTH_CLIENT_SECRET && OAUTH_LOGIN_PASSWORD &&
   console.log('MCP connector enabled at /mcp');
 } else {
   console.warn(
-    'MCP connector disabled — set APP_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_LOGIN_PASSWORD, OAUTH_REDIRECT_URIS to enable it.'
+    'MCP connector disabled — set APP_URL and OAUTH_LOGIN_PASSWORD to enable it.'
   );
 }
 

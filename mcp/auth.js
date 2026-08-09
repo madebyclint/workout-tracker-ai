@@ -1,16 +1,21 @@
 /**
  * mcp/auth.js
  *
- * Minimal single-user OAuth 2.1 authorization server for the /mcp connector.
+ * Single-user OAuth 2.1 authorization server for the /mcp connector.
  *
- * There is exactly one trusted user (the app owner) and one pre-registered
- * OAuth client (claude.ai, configured with a static Client ID/Secret pasted
- * into its "Add custom connector" Advanced settings) — so this deliberately
- * skips Dynamic Client Registration (RFC 7591) and any real user database.
- * "Login" is a single shared password gate on /authorize.
+ * Supports Dynamic Client Registration (RFC 7591): claude.ai self-registers
+ * when you add the connector, so there's no client ID/secret to generate
+ * or paste, and no redirect_uri to configure ahead of time — the client
+ * declares its own redirect_uris at registration time and the SDK validates
+ * against those automatically.
  *
- * Codes/tokens are kept in memory: fine for one low-traffic user, and a
- * restart just forces re-authorization (claude.ai will prompt again).
+ * There's still exactly one trusted human, though, and no existing account
+ * system to piggyback on — so "login" is a single shared password gate on
+ * /authorize (separate from the OAuth client credentials above).
+ *
+ * Clients/codes/tokens are kept in memory: fine for one low-traffic user,
+ * and a restart just forces re-registration + re-authorization (claude.ai
+ * will prompt again).
  */
 
 const crypto = require('crypto');
@@ -61,21 +66,11 @@ function loginPage({ action, hidden, error }) {
 
 /**
  * @param {object} opts
- * @param {string} opts.clientId
- * @param {string} opts.clientSecret
- * @param {string[]} opts.redirectUris
  * @param {string} opts.loginPassword
  */
-function createAuthProvider({ clientId, clientSecret, redirectUris, loginPassword }) {
-  const client = {
-    client_id: clientId,
-    client_secret: clientSecret,
-    redirect_uris: redirectUris,
-    grant_types: ['authorization_code', 'refresh_token'],
-    response_types: ['code'],
-    token_endpoint_auth_method: 'client_secret_post',
-  };
-
+function createAuthProvider({ loginPassword }) {
+  // clientId -> OAuthClientInformationFull (as issued by clientRegistrationHandler)
+  const clients = new Map();
   // authorizationCode -> { codeChallenge, clientId, redirectUri, scopes, resource, expiresAt }
   const codes = new Map();
   // accessToken -> { clientId, scopes, resource, expiresAt }
@@ -90,10 +85,12 @@ function createAuthProvider({ clientId, clientSecret, redirectUris, loginPasswor
 
   const clientsStore = {
     getClient(id) {
-      return id === client.client_id ? client : undefined;
+      return clients.get(id);
     },
-    // registerClient intentionally unimplemented: disables Dynamic Client
-    // Registration (mcpAuthRouter only mounts /register if this exists).
+    registerClient(clientInfo) {
+      clients.set(clientInfo.client_id, clientInfo);
+      return clientInfo;
+    },
   };
 
   // Router mounted alongside mcpAuthRouter for the password-check POST that
@@ -107,7 +104,8 @@ function createAuthProvider({ clientId, clientSecret, redirectUris, loginPasswor
 
     const hidden = { client_id, redirect_uri, state, code_challenge, resource, scope };
 
-    if (client_id !== client.client_id || !redirectUris.includes(redirect_uri)) {
+    const client = clients.get(client_id);
+    if (!client || !client.redirect_uris.includes(redirect_uri)) {
       res.status(400).send('Invalid authorization request.');
       return;
     }
@@ -238,7 +236,15 @@ function createAuthProvider({ clientId, clientSecret, redirectUris, loginPasswor
     },
   };
 
-  return { provider, loginRouter };
+  return {
+    provider,
+    loginRouter,
+    // clientSecretExpirySeconds: 0 disables client-secret expiry — a
+    // dynamically registered client re-expiring every 30 days (the SDK
+    // default) would otherwise force claude.ai to silently re-register
+    // periodically for no real security benefit at this scale.
+    clientRegistrationOptions: { clientSecretExpirySeconds: 0 },
+  };
 }
 
 module.exports = { createAuthProvider };
