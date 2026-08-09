@@ -3,6 +3,12 @@ const express = require('express');
 const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs');
+const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
+const { mcpAuthRouter } = require('@modelcontextprotocol/sdk/server/auth/router.js');
+const { requireBearerAuth } = require('@modelcontextprotocol/sdk/server/auth/middleware/bearerAuth.js');
+const { getOAuthProtectedResourceMetadataUrl } = require('@modelcontextprotocol/sdk/server/auth/router.js');
+const { createAuthProvider } = require('./mcp/auth');
+const { createMcpServer } = require('./mcp/server');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -57,9 +63,12 @@ app.get('/api/weeks', async (req, res) => {
 app.get('/api/weeks/:week/program', async (req, res) => {
   try {
     const { week } = req.params;
-    const result = await pool.query('SELECT program_file FROM weeks WHERE week = $1', [week]);
+    const result = await pool.query('SELECT program_file, program_md FROM weeks WHERE week = $1', [week]);
     if (!result.rows.length) return res.status(404).send('Week not found');
-    const filePath = path.join(__dirname, result.rows[0].program_file);
+    const { program_file, program_md } = result.rows[0];
+    if (program_md) return res.type('text/plain').send(program_md);
+    if (!program_file) return res.status(404).send('Program not found');
+    const filePath = path.join(__dirname, program_file);
     if (!fs.existsSync(filePath)) return res.status(404).send('Program file not found');
     res.type('text/plain').send(fs.readFileSync(filePath, 'utf8'));
   } catch (err) {
@@ -204,6 +213,69 @@ function getVersion() {
   return _version;
 }
 app.get('/api/version', (_req, res) => res.json(getVersion()));
+
+// ─────────────────────────────────────
+//  MCP connector — lets Claude (via a claude.ai remote connector) read
+//  weeks/logs and create/update week programs. OAuth-protected (see
+//  mcp/auth.js); disabled unless all required env vars are set, so local
+//  dev without OAuth config still runs the rest of the app fine.
+// ─────────────────────────────────────
+const { APP_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_LOGIN_PASSWORD, OAUTH_REDIRECT_URIS } = process.env;
+
+if (APP_URL && OAUTH_CLIENT_ID && OAUTH_CLIENT_SECRET && OAUTH_LOGIN_PASSWORD && OAUTH_REDIRECT_URIS) {
+  const issuerUrl = new URL(APP_URL);
+  const resourceServerUrl = new URL('/mcp', APP_URL);
+  const { provider, loginRouter } = createAuthProvider({
+    clientId: OAUTH_CLIENT_ID,
+    clientSecret: OAUTH_CLIENT_SECRET,
+    redirectUris: OAUTH_REDIRECT_URIS.split(',').map(s => s.trim()),
+    loginPassword: OAUTH_LOGIN_PASSWORD,
+  });
+
+  // Mounted before mcpAuthRouter: that router's /authorize handler is
+  // installed with app.use('/authorize', ...), which prefix-matches
+  // /authorize/login too and would otherwise consume the request body
+  // first and fall through, breaking our own urlencoded() parsing.
+  app.use(loginRouter);
+  app.use(mcpAuthRouter({ provider, issuerUrl, resourceServerUrl }));
+
+  const requireAuth = requireBearerAuth({
+    verifier: provider,
+    resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(resourceServerUrl),
+  });
+
+  app.post('/mcp', requireAuth, async (req, res) => {
+    try {
+      const mcpServer = createMcpServer(pool);
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+      await mcpServer.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+      res.on('close', () => {
+        transport.close();
+        mcpServer.close();
+      });
+    } catch (err) {
+      console.error('MCP request error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal server error' }, id: null });
+      }
+    }
+  });
+
+  app.get('/mcp', requireAuth, (_req, res) => {
+    res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
+  });
+
+  app.delete('/mcp', requireAuth, (_req, res) => {
+    res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
+  });
+
+  console.log('MCP connector enabled at /mcp');
+} else {
+  console.warn(
+    'MCP connector disabled — set APP_URL, OAUTH_CLIENT_ID, OAUTH_CLIENT_SECRET, OAUTH_LOGIN_PASSWORD, OAUTH_REDIRECT_URIS to enable it.'
+  );
+}
 
 // ─────────────────────────────────────
 //  SPA fallback — serve index.html for

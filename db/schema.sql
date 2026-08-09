@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS weeks (
   date         DATE         NOT NULL,
   cycle        CHAR(1)      NOT NULL,           -- A | B | C | D
   label        VARCHAR(200) NOT NULL,
-  program_file VARCHAR(200),                    -- relative path to .md file
+  program_file VARCHAR(200),                    -- relative path to .md file (legacy weeks)
+  program_md   TEXT,                            -- program markdown stored directly (MCP-created weeks)
   created_at   TIMESTAMPTZ  DEFAULT NOW()
 );
 
@@ -27,3 +28,7 @@ CREATE TABLE IF NOT EXISTS session_logs (
   created_at  TIMESTAMPTZ  DEFAULT NOW(),
   updated_at  TIMESTAMPTZ  DEFAULT NOW()
 );
+
+-- Safe to re-run against a pre-existing database (e.g. Railway prod) where the
+-- weeks table already existed before program_md was added.
+ALTER TABLE weeks ADD COLUMN IF NOT EXISTS program_md TEXT;
