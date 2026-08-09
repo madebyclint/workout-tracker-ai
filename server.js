@@ -25,6 +25,82 @@ const pool = new Pool({
 //  Middleware
 // ─────────────────────────────────────
 app.use(express.json());
+
+// ─────────────────────────────────────
+//  MCP connector — lets Claude (via a claude.ai remote connector) read
+//  weeks/logs and create/update week programs. OAuth-protected (see
+//  mcp/auth.js) with Dynamic Client Registration, so claude.ai self-registers
+//  on add — no client ID/secret or redirect_uri to configure by hand.
+//  Disabled unless required env vars are set, so local dev without OAuth
+//  config still runs the rest of the app fine.
+//
+//  Mounted before express.static below: there's a real `mcp/` directory on
+//  disk (holding this route's own implementation), which express.static
+//  would otherwise treat as a static directory and 301-redirect GET /mcp
+//  to /mcp/ before this route ever saw the request.
+// ─────────────────────────────────────
+const { APP_URL, OAUTH_LOGIN_PASSWORD } = process.env;
+
+if (APP_URL && OAUTH_LOGIN_PASSWORD) {
+  const issuerUrl = new URL(APP_URL);
+  const resourceServerUrl = new URL('/mcp', APP_URL);
+  const { provider, loginRouter, clientRegistrationOptions } = createAuthProvider({
+    loginPassword: OAUTH_LOGIN_PASSWORD,
+  });
+
+  // Mounted before mcpAuthRouter: that router's /authorize handler is
+  // installed with app.use('/authorize', ...), which prefix-matches
+  // /authorize/login too and would otherwise consume the request body
+  // first and fall through, breaking our own urlencoded() parsing.
+  app.use(loginRouter);
+  app.use(mcpAuthRouter({ provider, issuerUrl, resourceServerUrl, clientRegistrationOptions }));
+
+  const requireAuth = requireBearerAuth({
+    verifier: provider,
+    resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(resourceServerUrl),
+  });
+
+  app.post('/mcp', requireAuth, async (req, res) => {
+    try {
+      const mcpServer = createMcpServer(pool);
+      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
+      await mcpServer.connect(transport);
+      await transport.handleRequest(req, res, req.body);
+      res.on('close', () => {
+        transport.close();
+        mcpServer.close();
+      });
+    } catch (err) {
+      console.error('MCP request error:', err);
+      if (!res.headersSent) {
+        res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal server error' }, id: null });
+      }
+    }
+  });
+
+  app.get('/mcp', requireAuth, (_req, res) => {
+    res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
+  });
+
+  app.delete('/mcp', requireAuth, (_req, res) => {
+    res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
+  });
+
+  console.log('MCP connector enabled at /mcp');
+} else {
+  console.warn(
+    'MCP connector disabled — set APP_URL and OAUTH_LOGIN_PASSWORD to enable it.'
+  );
+}
+
+// Never let express.static hand out server-internal source/config —
+// mcp/, db/, scripts/, server.js, package*.json, node_modules, dotfiles.
+app.use((req, res, next) => {
+  if (/^\/(mcp\/|db\/|scripts\/|node_modules\/|server\.js$|package(-lock)?\.json$)/.test(req.path)) {
+    return res.status(404).end();
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname)));
 
 // ─────────────────────────────────────
@@ -213,68 +289,6 @@ function getVersion() {
   return _version;
 }
 app.get('/api/version', (_req, res) => res.json(getVersion()));
-
-// ─────────────────────────────────────
-//  MCP connector — lets Claude (via a claude.ai remote connector) read
-//  weeks/logs and create/update week programs. OAuth-protected (see
-//  mcp/auth.js) with Dynamic Client Registration, so claude.ai self-registers
-//  on add — no client ID/secret or redirect_uri to configure by hand.
-//  Disabled unless required env vars are set, so local dev without OAuth
-//  config still runs the rest of the app fine.
-// ─────────────────────────────────────
-const { APP_URL, OAUTH_LOGIN_PASSWORD } = process.env;
-
-if (APP_URL && OAUTH_LOGIN_PASSWORD) {
-  const issuerUrl = new URL(APP_URL);
-  const resourceServerUrl = new URL('/mcp', APP_URL);
-  const { provider, loginRouter, clientRegistrationOptions } = createAuthProvider({
-    loginPassword: OAUTH_LOGIN_PASSWORD,
-  });
-
-  // Mounted before mcpAuthRouter: that router's /authorize handler is
-  // installed with app.use('/authorize', ...), which prefix-matches
-  // /authorize/login too and would otherwise consume the request body
-  // first and fall through, breaking our own urlencoded() parsing.
-  app.use(loginRouter);
-  app.use(mcpAuthRouter({ provider, issuerUrl, resourceServerUrl, clientRegistrationOptions }));
-
-  const requireAuth = requireBearerAuth({
-    verifier: provider,
-    resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(resourceServerUrl),
-  });
-
-  app.post('/mcp', requireAuth, async (req, res) => {
-    try {
-      const mcpServer = createMcpServer(pool);
-      const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined });
-      await mcpServer.connect(transport);
-      await transport.handleRequest(req, res, req.body);
-      res.on('close', () => {
-        transport.close();
-        mcpServer.close();
-      });
-    } catch (err) {
-      console.error('MCP request error:', err);
-      if (!res.headersSent) {
-        res.status(500).json({ jsonrpc: '2.0', error: { code: -32603, message: 'Internal server error' }, id: null });
-      }
-    }
-  });
-
-  app.get('/mcp', requireAuth, (_req, res) => {
-    res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
-  });
-
-  app.delete('/mcp', requireAuth, (_req, res) => {
-    res.status(405).json({ jsonrpc: '2.0', error: { code: -32000, message: 'Method not allowed.' }, id: null });
-  });
-
-  console.log('MCP connector enabled at /mcp');
-} else {
-  console.warn(
-    'MCP connector disabled — set APP_URL and OAUTH_LOGIN_PASSWORD to enable it.'
-  );
-}
 
 // ─────────────────────────────────────
 //  SPA fallback — serve index.html for
