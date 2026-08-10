@@ -13,6 +13,11 @@ const { createMcpServer } = require('./mcp/server');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Railway (like most PaaS) sits behind a proxy and sets X-Forwarded-For;
+// without this, express-rate-limit (used by the MCP SDK's OAuth handlers)
+// throws on every request instead of just trusting it.
+app.set('trust proxy', 1);
+
 // ─────────────────────────────────────
 //  Database
 // ─────────────────────────────────────
