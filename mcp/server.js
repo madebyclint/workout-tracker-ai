@@ -35,6 +35,36 @@ const CYCLE_PROFILES = {
   },
 };
 
+// Mirrors the keyword fallback in js/log.js's getExerciseMeta() — that's a
+// client-side, name-only lookup (no structured tag field anywhere), so this
+// is exposed read-only via list_exercise_categories rather than duplicated
+// into a new schema. Keep in sync manually if js/log.js's rules change.
+const EXERCISE_CATEGORY_RULES = [
+  { keywords: ['hip thrust', 'glute bridge'], cat: 'legs', sub: 'Glute' },
+  { keywords: ['deadlift', 'rdl'], cat: 'legs', sub: 'Hinge' },
+  { keywords: ['squat', 'lunge', 'step-up', 'calf'], cat: 'legs', sub: 'Quad' },
+  { keywords: ['swing', 'carry', 'thruster'], cat: 'legs', sub: 'Power' },
+  { keywords: ['row', 'pulldown', 'pull-up'], cat: 'pull', sub: 'Back' },
+  { keywords: ['curl'], cat: 'pull', sub: 'Biceps' },
+  { keywords: ['face pull'], cat: 'pull', sub: 'Rear Delt' },
+  { keywords: ['bench', 'fly'], cat: 'push', sub: 'Chest' },
+  { keywords: ['shoulder', 'lateral', 'raise'], cat: 'push', sub: 'Shoulder' },
+  { keywords: ['tricep', 'pushdown', 'dip'], cat: 'push', sub: 'Triceps' },
+  { keywords: ['plank', 'hollow', 'bird dog'], cat: 'core', sub: 'Stability' },
+  { keywords: ['woodchop', 'pallof', 'twist'], cat: 'core', sub: 'Anti-Rot' },
+  { keywords: ['crunch', 'rollout'], cat: 'core', sub: 'Flexion' },
+  { keywords: ['press'], cat: 'push', sub: 'Chest' },
+];
+
+async function getReferenceMd(pool) {
+  const dbResult = await pool.query("SELECT value FROM config WHERE key = 'reference'");
+  if (dbResult.rows.length) return dbResult.rows[0].value;
+  const fs = require('fs');
+  const path = require('path');
+  const filePath = path.join(__dirname, '..', 'exercises', 'reference.md');
+  return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
+}
+
 const PROGRAM_MD_FORMAT_HINT = `Expected markdown format for program_md:
 
 # Week <cycle> — <Title>
@@ -121,14 +151,7 @@ function createMcpServer(pool) {
         [week]
       );
       const l = logResult.rows[0];
-
-      const fs = require('fs');
-      const path = require('path');
-      let programMd = w.program_md || null;
-      if (!programMd && w.program_file) {
-        const filePath = path.join(__dirname, '..', w.program_file);
-        if (fs.existsSync(filePath)) programMd = fs.readFileSync(filePath, 'utf8');
-      }
+      const programMd = await getWeekProgramMd(w);
 
       return {
         content: [
@@ -164,11 +187,41 @@ function createMcpServer(pool) {
       annotations: { readOnlyHint: true },
     },
     async () => {
-      const fs = require('fs');
-      const path = require('path');
-      const filePath = path.join(__dirname, '..', 'exercises', 'reference.md');
-      const text = fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
+      const text = await getReferenceMd(pool);
       return { content: [{ type: 'text', text }] };
+    }
+  );
+
+  server.registerTool(
+    'update_reference',
+    {
+      title: 'Update exercise reference',
+      description:
+        'Overwrite the exercise reference library shown in the Reference tab. Stored in the database (not the reference.md file), so it survives redeploys and takes priority over the file once set.',
+      inputSchema: { reference_md: z.string().describe('Full replacement markdown for the reference library') },
+      annotations: { destructiveHint: true },
+    },
+    async ({ reference_md }) => {
+      await pool.query(
+        `INSERT INTO config (key, value) VALUES ('reference', $1::jsonb)
+         ON CONFLICT (key) DO UPDATE SET value = $1::jsonb, updated_at = NOW()`,
+        [JSON.stringify(reference_md)]
+      );
+      return { content: [{ type: 'text', text: 'Reference library updated.' }] };
+    }
+  );
+
+  server.registerTool(
+    'list_exercise_categories',
+    {
+      title: 'List exercise category rules',
+      description:
+        'Returns the keyword rules the app uses to auto-tag exercises (e.g. "squat" → Legs/Quad) for the Body Balance chart and category badges. There is no structured tag field — categorization is inferred entirely from the exercise name text you write in program_md. Check this before naming exercises so they land in the intended category instead of the generic fallback.',
+      inputSchema: {},
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      return { content: [{ type: 'text', text: JSON.stringify({ rules: EXERCISE_CATEGORY_RULES, fallback: 'core/Stability' }, null, 2) }] };
     }
   );
 
@@ -235,7 +288,137 @@ function createMcpServer(pool) {
     }
   );
 
+  server.registerTool(
+    'update_week_metadata',
+    {
+      title: 'Update week metadata',
+      description:
+        'Rename a week\'s label/date/cycle without touching its program_md or session log. Use this to fix a stale title after replacing a week\'s content, without needing to resend the whole program.',
+      inputSchema: {
+        week: z.string().describe('Week identifier, e.g. "2026-W20"'),
+        label: z.string().optional().describe('New label, e.g. "Upper Push + Core"'),
+        date: z.string().optional().describe('New ISO date for the week start'),
+        cycle: z.enum(['A', 'B', 'C', 'D']).optional().describe('New cycle letter'),
+      },
+      annotations: { destructiveHint: false },
+    },
+    async ({ week, label, date, cycle }) => {
+      if (label === undefined && date === undefined && cycle === undefined) {
+        return { content: [{ type: 'text', text: 'Provide at least one of label, date, or cycle.' }], isError: true };
+      }
+      const result = await pool.query(
+        `UPDATE weeks SET
+           label = COALESCE($2, label),
+           date = COALESCE($3, date),
+           cycle = COALESCE($4, cycle)
+         WHERE week = $1`,
+        [week, label ?? null, date ?? null, cycle ?? null]
+      );
+      if (!result.rowCount) {
+        return { content: [{ type: 'text', text: `Week not found: ${week}` }], isError: true };
+      }
+      return { content: [{ type: 'text', text: `Updated metadata for week ${week}.` }] };
+    }
+  );
+
+  server.registerTool(
+    'delete_week',
+    {
+      title: 'Delete a week',
+      description:
+        'Permanently delete a week that has no session log — for cleaning up stale/unused future weeks. Refuses if the week has a saved session log, to protect real logged history; there is no override.',
+      inputSchema: { week: z.string().describe('Week identifier, e.g. "2026-W35"') },
+      annotations: { destructiveHint: true },
+    },
+    async ({ week }) => {
+      const logResult = await pool.query('SELECT 1 FROM session_logs WHERE week = $1', [week]);
+      if (logResult.rows.length) {
+        return {
+          content: [{ type: 'text', text: `Refusing to delete ${week}: it has a saved session log. Deleting weeks with real logged history is not supported.` }],
+          isError: true,
+        };
+      }
+      const result = await pool.query('DELETE FROM weeks WHERE week = $1', [week]);
+      if (!result.rowCount) {
+        return { content: [{ type: 'text', text: `Week not found: ${week}` }], isError: true };
+      }
+      return { content: [{ type: 'text', text: `Deleted week ${week}.` }] };
+    }
+  );
+
+  server.registerTool(
+    'duplicate_week',
+    {
+      title: 'Duplicate a week',
+      description:
+        'Clone an existing week\'s program (and label/cycle, adjustable) into a new week ID, without touching the source week\'s log. Useful for rotating a 4-week block forward instead of retyping content.',
+      inputSchema: {
+        source_week: z.string().describe('Week identifier to copy from, e.g. "2026-W24-A"'),
+        new_week: z.string().describe('New week identifier, e.g. "2026-W28-A"'),
+        date: z.string().describe('ISO date for the new week start'),
+        label: z.string().optional().describe('Label for the new week; defaults to the source week\'s label'),
+        cycle: z.enum(['A', 'B', 'C', 'D']).optional().describe('Cycle for the new week; defaults to the source week\'s cycle'),
+      },
+      annotations: { destructiveHint: false },
+    },
+    async ({ source_week, new_week, date, label, cycle }) => {
+      const sourceResult = await pool.query('SELECT * FROM weeks WHERE week = $1', [source_week]);
+      if (!sourceResult.rows.length) {
+        return { content: [{ type: 'text', text: `Source week not found: ${source_week}` }], isError: true };
+      }
+      const src = sourceResult.rows[0];
+      const programMd = src.program_md || (await getWeekProgramMd(src));
+
+      await pool.query(
+        `INSERT INTO weeks (week, date, cycle, label, program_md)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (week) DO UPDATE SET date = $2, cycle = $3, label = $4, program_md = $5`,
+        [new_week, date, cycle || src.cycle, label || src.label, programMd]
+      );
+      return { content: [{ type: 'text', text: `Duplicated ${source_week} into ${new_week}.` }] };
+    }
+  );
+
+  server.registerTool(
+    'list_sessions',
+    {
+      title: 'List logged sessions',
+      description:
+        'Read actual logged performance (exercises, sets/reps/weight done, notes, per-athlete bodyweight) across every week that has a saved session — in one call, instead of calling get_week per week. Use this to progress off real lift history instead of estimated ranges.',
+      inputSchema: {},
+      annotations: { readOnlyHint: true },
+    },
+    async () => {
+      const result = await pool.query(`
+        SELECT sl.week, w.date, w.cycle, w.label, sl.saved_at, sl.notes, sl.exercises, sl.athletes
+        FROM session_logs sl
+        JOIN weeks w ON w.week = sl.week
+        ORDER BY w.date ASC
+      `);
+      const sessions = result.rows.map(r => ({
+        week: r.week,
+        date: r.date,
+        cycle: r.cycle,
+        label: r.label,
+        savedAt: r.saved_at,
+        notes: r.notes,
+        exercises: r.exercises,
+        athletes: r.athletes,
+      }));
+      return { content: [{ type: 'text', text: JSON.stringify({ sessions }, null, 2) }] };
+    }
+  );
+
   return server;
+}
+
+async function getWeekProgramMd(w) {
+  if (w.program_md) return w.program_md;
+  if (!w.program_file) return null;
+  const fs = require('fs');
+  const path = require('path');
+  const filePath = path.join(__dirname, '..', w.program_file);
+  return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : null;
 }
 
 module.exports = { createMcpServer };

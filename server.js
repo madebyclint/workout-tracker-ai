@@ -160,10 +160,16 @@ app.get('/api/weeks/:week/program', async (req, res) => {
 // ─────────────────────────────────────
 //  API: Exercise reference
 // ─────────────────────────────────────
-app.get('/api/reference', (req, res) => {
-  const filePath = path.join(__dirname, 'exercises', 'reference.md');
-  if (!fs.existsSync(filePath)) return res.status(404).send('Reference not found');
-  res.type('text/plain').send(fs.readFileSync(filePath, 'utf8'));
+app.get('/api/reference', async (req, res) => {
+  try {
+    const dbResult = await pool.query("SELECT value FROM config WHERE key = 'reference'");
+    if (dbResult.rows.length) return res.type('text/plain').send(dbResult.rows[0].value);
+    const filePath = path.join(__dirname, 'exercises', 'reference.md');
+    if (!fs.existsSync(filePath)) return res.status(404).send('Reference not found');
+    res.type('text/plain').send(fs.readFileSync(filePath, 'utf8'));
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ─────────────────────────────────────
