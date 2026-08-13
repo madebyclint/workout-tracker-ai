@@ -13,9 +13,13 @@
  * system to piggyback on — so "login" is a single shared password gate on
  * /authorize (separate from the OAuth client credentials above).
  *
- * Clients/codes/tokens are kept in memory: fine for one low-traffic user,
- * and a restart just forces re-registration + re-authorization (claude.ai
- * will prompt again).
+ * Clients/codes/tokens are persisted in Postgres (oauth_clients/oauth_codes/
+ * oauth_tokens — see db/schema.sql), not memory: a redeploy restarts the
+ * process, and an in-memory store would silently drop every registered
+ * client and issued token on every push, forcing claude.ai to re-register
+ * and you to re-authorize each time. Access/refresh tokens are stored as
+ * SHA-256 hashes; client_secret is stored as-is since the SDK's own client
+ * auth middleware compares it directly.
  */
 
 const crypto = require('crypto');
@@ -28,6 +32,10 @@ const REFRESH_TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
 
 function newToken() {
   return crypto.randomBytes(32).toString('base64url');
+}
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
 }
 
 function escapeHtml(str) {
@@ -64,31 +72,50 @@ function loginPage({ action, hidden, error }) {
 </body></html>`;
 }
 
+function rowToClient(row) {
+  if (!row) return undefined;
+  return {
+    client_id: row.client_id,
+    client_secret: row.client_secret || undefined,
+    redirect_uris: row.redirect_uris,
+    grant_types: row.grant_types || undefined,
+    response_types: row.response_types || undefined,
+    token_endpoint_auth_method: row.token_endpoint_auth_method || undefined,
+    client_name: row.client_name || undefined,
+    client_id_issued_at: row.client_id_issued_at != null ? Number(row.client_id_issued_at) : undefined,
+    client_secret_expires_at: row.client_secret_expires_at != null ? Number(row.client_secret_expires_at) : undefined,
+  };
+}
+
 /**
  * @param {object} opts
  * @param {string} opts.loginPassword
+ * @param {import('pg').Pool} opts.pool
  */
-function createAuthProvider({ loginPassword }) {
-  // clientId -> OAuthClientInformationFull (as issued by clientRegistrationHandler)
-  const clients = new Map();
-  // authorizationCode -> { codeChallenge, clientId, redirectUri, scopes, resource, expiresAt }
-  const codes = new Map();
-  // accessToken -> { clientId, scopes, resource, expiresAt }
-  const accessTokens = new Map();
-  // refreshToken -> { clientId, scopes, resource, expiresAt }
-  const refreshTokens = new Map();
-
-  function prune(map) {
-    const now = Date.now();
-    for (const [key, val] of map) if (val.expiresAt < now) map.delete(key);
-  }
-
+function createAuthProvider({ loginPassword, pool }) {
   const clientsStore = {
-    getClient(id) {
-      return clients.get(id);
+    async getClient(id) {
+      const result = await pool.query('SELECT * FROM oauth_clients WHERE client_id = $1', [id]);
+      return rowToClient(result.rows[0]);
     },
-    registerClient(clientInfo) {
-      clients.set(clientInfo.client_id, clientInfo);
+    async registerClient(clientInfo) {
+      await pool.query(
+        `INSERT INTO oauth_clients
+           (client_id, client_secret, redirect_uris, grant_types, response_types,
+            token_endpoint_auth_method, client_name, client_id_issued_at, client_secret_expires_at)
+         VALUES ($1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6, $7, $8, $9)`,
+        [
+          clientInfo.client_id,
+          clientInfo.client_secret || null,
+          JSON.stringify(clientInfo.redirect_uris),
+          JSON.stringify(clientInfo.grant_types || []),
+          JSON.stringify(clientInfo.response_types || []),
+          clientInfo.token_endpoint_auth_method || null,
+          clientInfo.client_name || null,
+          clientInfo.client_id_issued_at || null,
+          clientInfo.client_secret_expires_at || null,
+        ]
+      );
       return clientInfo;
     },
   };
@@ -99,12 +126,12 @@ function createAuthProvider({ loginPassword }) {
   // that method — no access to the submitted password field.
   const loginRouter = express.Router();
   loginRouter.use(express.urlencoded({ extended: false }));
-  loginRouter.post('/authorize/login', (req, res) => {
+  loginRouter.post('/authorize/login', async (req, res) => {
     const { password, client_id, redirect_uri, state, code_challenge, resource, scope } = req.body;
 
     const hidden = { client_id, redirect_uri, state, code_challenge, resource, scope };
 
-    const client = clients.get(client_id);
+    const client = await clientsStore.getClient(client_id);
     if (!client || !client.redirect_uris.includes(redirect_uri)) {
       res.status(400).send('Invalid authorization request.');
       return;
@@ -115,22 +142,54 @@ function createAuthProvider({ loginPassword }) {
       return;
     }
 
-    prune(codes);
+    await pool.query('DELETE FROM oauth_codes WHERE expires_at < NOW()');
     const code = newToken();
-    codes.set(code, {
-      codeChallenge: code_challenge,
-      clientId: client_id,
-      redirectUri: redirect_uri,
-      scopes: scope ? scope.split(' ') : [],
-      resource: resource || undefined,
-      expiresAt: Date.now() + CODE_TTL_MS,
-    });
+    await pool.query(
+      `INSERT INTO oauth_codes (code, client_id, code_challenge, redirect_uri, scopes, resource, expires_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7)`,
+      [
+        code,
+        client_id,
+        code_challenge,
+        redirect_uri,
+        JSON.stringify(scope ? scope.split(' ') : []),
+        resource || null,
+        new Date(Date.now() + CODE_TTL_MS),
+      ]
+    );
 
     const redirect = new URL(redirect_uri);
     redirect.searchParams.set('code', code);
     if (state) redirect.searchParams.set('state', state);
     res.redirect(302, redirect.href);
   });
+
+  async function issueTokenPair(clientId, scopes, resource) {
+    await pool.query("DELETE FROM oauth_tokens WHERE expires_at < NOW()");
+
+    const accessToken = newToken();
+    const refreshToken = newToken();
+    const now = Date.now();
+
+    await pool.query(
+      `INSERT INTO oauth_tokens (token_hash, token_type, client_id, scopes, resource, expires_at)
+       VALUES ($1, 'access', $2, $3::jsonb, $4, $5)`,
+      [hashToken(accessToken), clientId, JSON.stringify(scopes), resource || null, new Date(now + ACCESS_TOKEN_TTL_MS)]
+    );
+    await pool.query(
+      `INSERT INTO oauth_tokens (token_hash, token_type, client_id, scopes, resource, expires_at)
+       VALUES ($1, 'refresh', $2, $3::jsonb, $4, $5)`,
+      [hashToken(refreshToken), clientId, JSON.stringify(scopes), resource || null, new Date(now + REFRESH_TOKEN_TTL_MS)]
+    );
+
+    return {
+      access_token: accessToken,
+      token_type: 'bearer',
+      expires_in: Math.floor(ACCESS_TOKEN_TTL_MS / 1000),
+      refresh_token: refreshToken,
+      scope: scopes.join(' ') || undefined,
+    };
+  }
 
   /** @type {import('@modelcontextprotocol/sdk/server/auth/provider.js').OAuthServerProvider} */
   const provider = {
@@ -149,63 +208,38 @@ function createAuthProvider({ loginPassword }) {
     },
 
     async challengeForAuthorizationCode(authClient, authorizationCode) {
-      const entry = codes.get(authorizationCode);
-      if (!entry || entry.expiresAt < Date.now() || entry.clientId !== authClient.client_id) {
-        throw new InvalidGrantError('Invalid or expired authorization code');
-      }
-      return entry.codeChallenge;
+      const result = await pool.query(
+        'SELECT code_challenge FROM oauth_codes WHERE code = $1 AND client_id = $2 AND expires_at > NOW()',
+        [authorizationCode, authClient.client_id]
+      );
+      if (!result.rows.length) throw new InvalidGrantError('Invalid or expired authorization code');
+      return result.rows[0].code_challenge;
     },
 
     async exchangeAuthorizationCode(authClient, authorizationCode) {
-      const entry = codes.get(authorizationCode);
-      if (!entry || entry.expiresAt < Date.now() || entry.clientId !== authClient.client_id) {
-        throw new InvalidGrantError('Invalid or expired authorization code');
-      }
-      codes.delete(authorizationCode);
-
-      prune(accessTokens);
-      prune(refreshTokens);
-
-      const accessToken = newToken();
-      const refreshToken = newToken();
-      const now = Date.now();
-      accessTokens.set(accessToken, {
-        clientId: authClient.client_id,
-        scopes: entry.scopes,
-        resource: entry.resource,
-        expiresAt: now + ACCESS_TOKEN_TTL_MS,
-      });
-      refreshTokens.set(refreshToken, {
-        clientId: authClient.client_id,
-        scopes: entry.scopes,
-        resource: entry.resource,
-        expiresAt: now + REFRESH_TOKEN_TTL_MS,
-      });
-
-      return {
-        access_token: accessToken,
-        token_type: 'bearer',
-        expires_in: Math.floor(ACCESS_TOKEN_TTL_MS / 1000),
-        refresh_token: refreshToken,
-        scope: entry.scopes.join(' ') || undefined,
-      };
+      const result = await pool.query(
+        'DELETE FROM oauth_codes WHERE code = $1 AND client_id = $2 AND expires_at > NOW() RETURNING scopes, resource',
+        [authorizationCode, authClient.client_id]
+      );
+      if (!result.rows.length) throw new InvalidGrantError('Invalid or expired authorization code');
+      const { scopes, resource } = result.rows[0];
+      return issueTokenPair(authClient.client_id, scopes, resource);
     },
 
     async exchangeRefreshToken(authClient, refreshToken, scopes) {
-      const entry = refreshTokens.get(refreshToken);
-      if (!entry || entry.expiresAt < Date.now() || entry.clientId !== authClient.client_id) {
-        throw new InvalidGrantError('Invalid or expired refresh token');
-      }
-
-      prune(accessTokens);
+      const result = await pool.query(
+        "SELECT scopes, resource FROM oauth_tokens WHERE token_hash = $1 AND token_type = 'refresh' AND client_id = $2 AND expires_at > NOW()",
+        [hashToken(refreshToken), authClient.client_id]
+      );
+      if (!result.rows.length) throw new InvalidGrantError('Invalid or expired refresh token');
+      const entry = result.rows[0];
 
       const accessToken = newToken();
-      accessTokens.set(accessToken, {
-        clientId: authClient.client_id,
-        scopes: scopes || entry.scopes,
-        resource: entry.resource,
-        expiresAt: Date.now() + ACCESS_TOKEN_TTL_MS,
-      });
+      await pool.query(
+        `INSERT INTO oauth_tokens (token_hash, token_type, client_id, scopes, resource, expires_at)
+         VALUES ($1, 'access', $2, $3::jsonb, $4, $5)`,
+        [hashToken(accessToken), authClient.client_id, JSON.stringify(scopes || entry.scopes), entry.resource, new Date(Date.now() + ACCESS_TOKEN_TTL_MS)]
+      );
 
       return {
         access_token: accessToken,
@@ -217,22 +251,23 @@ function createAuthProvider({ loginPassword }) {
     },
 
     async verifyAccessToken(token) {
-      const entry = accessTokens.get(token);
-      if (!entry || entry.expiresAt < Date.now()) {
-        throw new InvalidTokenError('Invalid or expired access token');
-      }
+      const result = await pool.query(
+        "SELECT client_id, scopes, resource, expires_at FROM oauth_tokens WHERE token_hash = $1 AND token_type = 'access' AND expires_at > NOW()",
+        [hashToken(token)]
+      );
+      if (!result.rows.length) throw new InvalidTokenError('Invalid or expired access token');
+      const entry = result.rows[0];
       return {
         token,
-        clientId: entry.clientId,
+        clientId: entry.client_id,
         scopes: entry.scopes,
-        expiresAt: Math.floor(entry.expiresAt / 1000),
+        expiresAt: Math.floor(new Date(entry.expires_at).getTime() / 1000),
         resource: entry.resource ? new URL(entry.resource) : undefined,
       };
     },
 
     async revokeToken(authClient, request) {
-      accessTokens.delete(request.token);
-      refreshTokens.delete(request.token);
+      await pool.query('DELETE FROM oauth_tokens WHERE token_hash = $1 AND client_id = $2', [hashToken(request.token), authClient.client_id]);
     },
   };
 

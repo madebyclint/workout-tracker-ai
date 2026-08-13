@@ -32,3 +32,42 @@ CREATE TABLE IF NOT EXISTS session_logs (
 -- Safe to re-run against a pre-existing database (e.g. Railway prod) where the
 -- weeks table already existed before program_md was added.
 ALTER TABLE weeks ADD COLUMN IF NOT EXISTS program_md TEXT;
+
+-- ─────────────────────────────────────
+--  MCP OAuth (mcp/auth.js) — persisted so a redeploy doesn't force claude.ai
+--  to re-register/re-authorize. Access/refresh tokens are stored as SHA-256
+--  hashes, never plaintext; client_secret is stored as-is because the SDK's
+--  own client auth middleware compares it directly (client_secret_post).
+-- ─────────────────────────────────────
+CREATE TABLE IF NOT EXISTS oauth_clients (
+  client_id                  VARCHAR(100) PRIMARY KEY,
+  client_secret              TEXT,
+  redirect_uris              JSONB        NOT NULL,
+  grant_types                JSONB,
+  response_types             JSONB,
+  token_endpoint_auth_method VARCHAR(50),
+  client_name                VARCHAR(200),
+  client_id_issued_at        BIGINT,
+  client_secret_expires_at   BIGINT,
+  created_at                 TIMESTAMPTZ  DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS oauth_codes (
+  code            VARCHAR(64) PRIMARY KEY,
+  client_id       VARCHAR(100) NOT NULL,
+  code_challenge  VARCHAR(200) NOT NULL,
+  redirect_uri    TEXT         NOT NULL,
+  scopes          JSONB        NOT NULL DEFAULT '[]',
+  resource        TEXT,
+  expires_at      TIMESTAMPTZ  NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS oauth_tokens (
+  token_hash  VARCHAR(64) PRIMARY KEY,  -- sha256 hex digest of the actual token
+  token_type  VARCHAR(10)  NOT NULL,    -- 'access' | 'refresh'
+  client_id   VARCHAR(100) NOT NULL,
+  scopes      JSONB        NOT NULL DEFAULT '[]',
+  resource    TEXT,
+  expires_at  TIMESTAMPTZ  NOT NULL
+);
+CREATE INDEX IF NOT EXISTS oauth_tokens_expires_at_idx ON oauth_tokens (expires_at);

@@ -51,6 +51,7 @@ if (APP_URL && OAUTH_LOGIN_PASSWORD) {
   const resourceServerUrl = new URL('/mcp', APP_URL);
   const { provider, loginRouter, clientRegistrationOptions } = createAuthProvider({
     loginPassword: OAUTH_LOGIN_PASSWORD,
+    pool,
   });
 
   // Mounted before mcpAuthRouter: that router's /authorize handler is
