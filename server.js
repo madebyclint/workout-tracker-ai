@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const { Pool } = require('pg');
 const path = require('path');
 const fs = require('fs');
@@ -66,6 +67,12 @@ if (APP_URL && OAUTH_LOGIN_PASSWORD) {
     resourceMetadataUrl: getOAuthProtectedResourceMetadataUrl(resourceServerUrl),
   });
 
+  // The SDK's own OAuth sub-routers (/register, /token, etc.) apply cors()
+  // internally, but /mcp itself doesn't — without this, a cross-origin
+  // preflight OPTIONS /mcp has no matching route and falls through to a
+  // CORS-header-less 404, which browser-based MCP clients treat as blocked.
+  app.use('/mcp', cors({ exposedHeaders: ['Mcp-Session-Id'] }));
+
   app.post('/mcp', requireAuth, async (req, res) => {
     try {
       const mcpServer = createMcpServer(pool);
@@ -93,6 +100,18 @@ if (APP_URL && OAUTH_LOGIN_PASSWORD) {
   });
 
   console.log('MCP connector enabled at /mcp');
+
+  // Fail loudly at startup instead of on the first claude.ai registration
+  // attempt: if the OAuth tables aren't there (e.g. db:migrate was never run
+  // against this Postgres after they were added), every /register, /token,
+  // and /authorize/login call will 500 with an opaque Postgres error.
+  pool.query('SELECT 1 FROM oauth_clients LIMIT 1').catch(err => {
+    console.error(
+      'MCP connector: oauth_clients table is not reachable — run `npm run db:migrate` ' +
+      'against this DATABASE_URL before connecting from claude.ai.',
+      err.message
+    );
+  });
 } else {
   console.warn(
     'MCP connector disabled — set APP_URL and OAUTH_LOGIN_PASSWORD to enable it.'

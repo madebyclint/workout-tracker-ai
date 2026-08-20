@@ -216,13 +216,16 @@ function createAuthProvider({ loginPassword, pool }) {
       return result.rows[0].code_challenge;
     },
 
-    async exchangeAuthorizationCode(authClient, authorizationCode) {
+    async exchangeAuthorizationCode(authClient, authorizationCode, _codeVerifier, redirectUri) {
       const result = await pool.query(
-        'DELETE FROM oauth_codes WHERE code = $1 AND client_id = $2 AND expires_at > NOW() RETURNING scopes, resource',
+        'DELETE FROM oauth_codes WHERE code = $1 AND client_id = $2 AND expires_at > NOW() RETURNING scopes, resource, redirect_uri',
         [authorizationCode, authClient.client_id]
       );
       if (!result.rows.length) throw new InvalidGrantError('Invalid or expired authorization code');
-      const { scopes, resource } = result.rows[0];
+      const { scopes, resource, redirect_uri } = result.rows[0];
+      if (redirectUri !== undefined && redirectUri !== redirect_uri) {
+        throw new InvalidGrantError('redirect_uri does not match the one used to request the authorization code');
+      }
       return issueTokenPair(authClient.client_id, scopes, resource);
     },
 
