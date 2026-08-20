@@ -1,6 +1,0 @@
-{
-  "hash": "a356320",
-  "full": "a356320cc1ade715f262c26c589d6653f836ffae",
-  "date": "2026-08-20T08:00:03-07:00",
-  "message": "Fix service worker precache 404 that trapped browsers on stale versions"
-}

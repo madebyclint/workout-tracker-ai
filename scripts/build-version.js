@@ -7,19 +7,31 @@ const fs = require('fs');
 const path = require('path');
 
 let version;
-try {
-  const hash    = execSync('git rev-parse --short HEAD').toString().trim();
-  const full    = execSync('git rev-parse HEAD').toString().trim();
-    const date    = execSync('git log -1 --format=%cI').toString().trim(); // ISO 8601 with colon in tz
-  const message = execSync('git log -1 --format=%s').toString().trim();
-  version = { hash, full, date, message };
-} catch {
+if (process.env.RAILWAY_GIT_COMMIT_SHA) {
+  // Railway's Nixpacks build strips .git from the build context, so `git` isn't
+  // available there — use the git info Railway injects as env vars instead.
+  const full = process.env.RAILWAY_GIT_COMMIT_SHA;
   version = {
-    hash: 'unknown',
-    full: 'unknown',
+    hash: full.slice(0, 7),
+    full,
     date: new Date().toISOString(),
-    message: '',
+    message: process.env.RAILWAY_GIT_COMMIT_MESSAGE || '',
   };
+} else {
+  try {
+    const hash    = execSync('git rev-parse --short HEAD').toString().trim();
+    const full    = execSync('git rev-parse HEAD').toString().trim();
+    const date    = execSync('git log -1 --format=%cI').toString().trim(); // ISO 8601 with colon in tz
+    const message = execSync('git log -1 --format=%s').toString().trim();
+    version = { hash, full, date, message };
+  } catch {
+    version = {
+      hash: 'unknown',
+      full: 'unknown',
+      date: new Date().toISOString(),
+      message: '',
+    };
+  }
 }
 
 const out = path.join(__dirname, '..', 'version.json');

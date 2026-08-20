@@ -1,4 +1,4 @@
-const CACHE_NAME = 'workout-tracker-v5';
+const CACHE_NAME = 'workout-tracker-v6';
 
 // Core shell assets to cache on install
 const PRECACHE_ASSETS = [
