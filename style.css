@@ -179,6 +179,7 @@ header {
 .ex-cat-pull { background: rgba(62,207,142,0.2);  color: #3ecf8e; }
 .ex-cat-legs { background: rgba(224,92,151,0.2);  color: #e05c97; }
 .ex-cat-core { background: rgba(245,197,66,0.2);  color: #f5c542; }
+.ex-cat-full_body { background: rgba(138,138,138,0.2); color: #b0b0b0; }
 .ex-sub-badge {
   font-size: 0.6rem;
   font-weight: 600;

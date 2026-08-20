@@ -19,19 +19,41 @@ CREATE TABLE IF NOT EXISTS weeks (
 );
 
 CREATE TABLE IF NOT EXISTS session_logs (
-  id          SERIAL       PRIMARY KEY,
-  week        VARCHAR(10)  UNIQUE NOT NULL REFERENCES weeks(week) ON DELETE CASCADE,
-  saved_at    TIMESTAMPTZ,
-  notes       TEXT         DEFAULT '',
-  exercises   JSONB        NOT NULL DEFAULT '{}',
-  athletes    JSONB        NOT NULL DEFAULT '{}',
-  created_at  TIMESTAMPTZ  DEFAULT NOW(),
-  updated_at  TIMESTAMPTZ  DEFAULT NOW()
+  id           SERIAL       PRIMARY KEY,
+  week         VARCHAR(10)  UNIQUE NOT NULL REFERENCES weeks(week) ON DELETE CASCADE,
+  saved_at     TIMESTAMPTZ,
+  notes        TEXT         DEFAULT '',
+  exercises    JSONB        NOT NULL DEFAULT '{}',
+  exercise_ids JSONB        NOT NULL DEFAULT '{}',  -- exercise name -> exercises.id, when program_md tagged it
+  athletes     JSONB        NOT NULL DEFAULT '{}',
+  created_at   TIMESTAMPTZ  DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ  DEFAULT NOW()
 );
+
+-- Safe to re-run against a pre-existing database where session_logs already
+-- existed before exercise_ids was added.
+ALTER TABLE session_logs ADD COLUMN IF NOT EXISTS exercise_ids JSONB NOT NULL DEFAULT '{}';
 
 -- Safe to re-run against a pre-existing database (e.g. Railway prod) where the
 -- weeks table already existed before program_md was added.
 ALTER TABLE weeks ADD COLUMN IF NOT EXISTS program_md TEXT;
+
+-- Structured exercise reference — replaces name-text keyword inference with a
+-- canonical id/category/subtag per exercise. See mcp/server.js's exercise_id
+-- lookup in program_md parsing.
+CREATE TABLE IF NOT EXISTS exercises (
+  id            VARCHAR(100) PRIMARY KEY,   -- stable slug, e.g. "single_arm_db_row"
+  name          VARCHAR(200) NOT NULL,
+  category      VARCHAR(20)  NOT NULL,       -- push | pull | legs | core | full_body
+  subtag        VARCHAR(50),                 -- e.g. "Back", "Anti-Rot", "Glute"
+  cues          TEXT,
+  video_url     TEXT,
+  thumbnail_url TEXT,
+  favorite      BOOLEAN      DEFAULT FALSE,
+  created_at    TIMESTAMPTZ  DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ  DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS exercises_category_idx ON exercises (category);
 
 -- ─────────────────────────────────────
 --  MCP OAuth (mcp/auth.js) — persisted so a redeploy doesn't force claude.ai

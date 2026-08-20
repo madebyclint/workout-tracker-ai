@@ -16,10 +16,10 @@ function parseProgram(md) {
       continue;
     }
 
-    const exMatch = line.match(/^### \d+\. (.+?)\s+`([^`]+)`/);
+    const exMatch = line.match(/^### \d+\. (.+?)(?:\s+\[([a-zA-Z0-9_-]+)\])?\s+`([^`]+)`/);
     if (exMatch && currentBlock) {
       if (currentExercise) currentBlock.exercises.push(currentExercise);
-      currentExercise = { name: exMatch[1].trim(), scheme: exMatch[2].trim(), muscles: '', scaling: { clint: '', wife: '' }, notes: '' };
+      currentExercise = { name: exMatch[1].trim(), id: exMatch[2] || null, scheme: exMatch[3].trim(), muscles: '', scaling: { clint: '', wife: '' }, notes: '' };
       continue;
     }
 
@@ -86,7 +86,7 @@ function renderProgram(md) {
       html += `<div class="exercise-item">
         <div class="exercise-name-row">
           <span class="exercise-name">${ex.name}</span>
-          <span class="exercise-cat-badges">${exCatBadgeHtml(ex.name)}</span>
+          <span class="exercise-cat-badges">${exCatBadgeHtml(ex.name, ex.id)}</span>
         </div>
         <div class="exercise-scheme">${ex.scheme}</div>`;
 

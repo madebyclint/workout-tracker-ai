@@ -78,12 +78,17 @@ const PROGRAM_MD_FORMAT_HINT = `Expected markdown format for program_md:
 
 ## Block 1 — <Block Name> (25–28 min)
 
-### 1. <Exercise Name> \`3 x 12\`
+### 1. <Exercise Name> [<exercise_id>] \`3 x 12\`
 - **Target muscles**: <muscles>
 - **Weight**: <weight range>
 - <form cue>
 
 [... more exercises ...]
+
+The optional \`[exercise_id]\` tag (check list_exercises first for canonical ids) links
+this exercise to the structured reference table for category/subtag/cues/links instead
+of relying on keyword-matching the name text. Omit it and the app falls back to
+keyword-matching, same as before.
 
 ---
 
@@ -166,7 +171,7 @@ function createMcpServer(pool) {
                 cycleProfile: CYCLE_PROFILES[w.cycle],
                 program_md: programMd,
                 session: l
-                  ? { savedAt: l.saved_at, notes: l.notes, exercises: l.exercises, athletes: l.athletes }
+                  ? { savedAt: l.saved_at, notes: l.notes, exercises: l.exercises, exercise_ids: l.exercise_ids, athletes: l.athletes }
                   : null,
               },
               null,
@@ -216,12 +221,142 @@ function createMcpServer(pool) {
     {
       title: 'List exercise category rules',
       description:
-        'Returns the keyword rules the app uses to auto-tag exercises (e.g. "squat" → Legs/Quad) for the Body Balance chart and category badges. There is no structured tag field — categorization is inferred entirely from the exercise name text you write in program_md. Check this before naming exercises so they land in the intended category instead of the generic fallback.',
+        'Returns the keyword rules the app falls back to for auto-tagging exercises (e.g. "squat" → Legs/Quad) when program_md doesn\'t tag an exercise with an [exercise_id]. Prefer list_exercises + an [exercise_id] tag in program_md for reliable categorization; these keyword rules are only a fallback for untagged exercises.',
       inputSchema: {},
       annotations: { readOnlyHint: true },
     },
     async () => {
       return { content: [{ type: 'text', text: JSON.stringify({ rules: EXERCISE_CATEGORY_RULES, fallback: 'core/Stability' }, null, 2) }] };
+    }
+  );
+
+  const exerciseSchema = {
+    id: z.string().describe('Stable slug, e.g. "single_arm_db_row"'),
+    name: z.string().describe('Display name, e.g. "Single-Arm Dumbbell Row"'),
+    category: z.enum(['push', 'pull', 'legs', 'core', 'full_body']),
+    subtag: z.string().optional().describe('Body Balance chart subtag, e.g. "Back", "Anti-Rot", "Glute"'),
+    cues: z.string().optional().describe('Form notes / coaching cues'),
+    video_url: z.string().optional(),
+    thumbnail_url: z.string().optional(),
+    favorite: z.boolean().optional(),
+  };
+
+  function rowToExercise(r) {
+    return {
+      id: r.id,
+      name: r.name,
+      category: r.category,
+      subtag: r.subtag,
+      cues: r.cues,
+      video_url: r.video_url,
+      thumbnail_url: r.thumbnail_url,
+      favorite: r.favorite,
+    };
+  }
+
+  async function upsertExerciseRow(client, ex) {
+    const result = await client.query(
+      `INSERT INTO exercises (id, name, category, subtag, cues, video_url, thumbnail_url, favorite)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, COALESCE($8, FALSE))
+       ON CONFLICT (id) DO UPDATE SET
+         name = $2, category = $3, subtag = $4, cues = $5,
+         video_url = $6, thumbnail_url = $7, favorite = COALESCE($8, exercises.favorite),
+         updated_at = NOW()
+       RETURNING *`,
+      [ex.id, ex.name, ex.category, ex.subtag ?? null, ex.cues ?? null, ex.video_url ?? null, ex.thumbnail_url ?? null, ex.favorite ?? null]
+    );
+    return rowToExercise(result.rows[0]);
+  }
+
+  server.registerTool(
+    'upsert_exercise',
+    {
+      title: 'Create or update an exercise',
+      description: 'Add a new exercise to the structured reference table, or overwrite an existing one by id.',
+      inputSchema: exerciseSchema,
+      annotations: { destructiveHint: false },
+    },
+    async (ex) => {
+      const exercise = await upsertExerciseRow(pool, ex);
+      return { content: [{ type: 'text', text: JSON.stringify(exercise, null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'bulk_upsert_exercises',
+    {
+      title: 'Create or update many exercises',
+      description: 'Seed or replace the whole exercise pool in one call instead of one exercise at a time.',
+      inputSchema: { exercises: z.array(z.object(exerciseSchema)) },
+      annotations: { destructiveHint: false },
+    },
+    async ({ exercises }) => {
+      const client = await pool.connect();
+      const updated = [];
+      try {
+        await client.query('BEGIN');
+        for (const ex of exercises) {
+          updated.push(await upsertExerciseRow(client, ex));
+        }
+        await client.query('COMMIT');
+      } catch (err) {
+        await client.query('ROLLBACK');
+        throw err;
+      } finally {
+        client.release();
+      }
+      return { content: [{ type: 'text', text: JSON.stringify({ updated: updated.length, exercises: updated }, null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'get_exercise',
+    {
+      title: 'Get an exercise',
+      description: 'Look up one exercise by its id or exact display name.',
+      inputSchema: { name_or_id: z.string() },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ name_or_id }) => {
+      const result = await pool.query(
+        'SELECT * FROM exercises WHERE id = $1 OR LOWER(name) = LOWER($1)',
+        [name_or_id]
+      );
+      if (!result.rows.length) {
+        return { content: [{ type: 'text', text: 'null' }] };
+      }
+      return { content: [{ type: 'text', text: JSON.stringify(rowToExercise(result.rows[0]), null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'list_exercises',
+    {
+      title: 'List exercises',
+      description:
+        'List exercises from the structured reference table, optionally filtered by category. Check this for canonical ids/names before writing a session, instead of guessing text and hoping list_exercise_categories\' keyword matcher tags it correctly.',
+      inputSchema: { category: z.enum(['push', 'pull', 'legs', 'core', 'full_body']).optional() },
+      annotations: { readOnlyHint: true },
+    },
+    async ({ category }) => {
+      const result = category
+        ? await pool.query('SELECT * FROM exercises WHERE category = $1 ORDER BY name ASC', [category])
+        : await pool.query('SELECT * FROM exercises ORDER BY category ASC, name ASC');
+      return { content: [{ type: 'text', text: JSON.stringify(result.rows.map(rowToExercise), null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'delete_exercise',
+    {
+      title: 'Delete an exercise',
+      description: 'Remove an exercise from the structured reference table by id.',
+      inputSchema: { id: z.string() },
+      annotations: { destructiveHint: true },
+    },
+    async ({ id }) => {
+      const result = await pool.query('DELETE FROM exercises WHERE id = $1', [id]);
+      return { content: [{ type: 'text', text: JSON.stringify({ deleted: !!result.rowCount }) }] };
     }
   );
 
@@ -347,6 +482,76 @@ function createMcpServer(pool) {
   );
 
   server.registerTool(
+    'delete_weeks',
+    {
+      title: 'Delete multiple weeks',
+      description:
+        'Delete several weeks in one call — same log-guard as delete_week (refuses any week with a saved session log), but reports a per-week result instead of failing the whole batch when one week is protected.',
+      inputSchema: { weeks: z.array(z.string()).describe('Week identifiers to delete, e.g. ["2026-W35", "2026-W36"]') },
+      annotations: { destructiveHint: true },
+    },
+    async ({ weeks }) => {
+      const results = [];
+      for (const week of weeks) {
+        const logResult = await pool.query('SELECT 1 FROM session_logs WHERE week = $1', [week]);
+        if (logResult.rows.length) {
+          results.push({ week, deleted: false, reason: 'has_log' });
+          continue;
+        }
+        const deleteResult = await pool.query('DELETE FROM weeks WHERE week = $1', [week]);
+        if (!deleteResult.rowCount) {
+          results.push({ week, deleted: false, reason: 'not_found' });
+          continue;
+        }
+        results.push({ week, deleted: true });
+      }
+      return { content: [{ type: 'text', text: JSON.stringify({ results }, null, 2) }] };
+    }
+  );
+
+  server.registerTool(
+    'delete_weeks_before',
+    {
+      title: 'Delete all weeks before a cutoff date',
+      description:
+        'Delete every week dated before cutoff_date that has no saved session log — for bulk cleanup of a stale future stretch. Weeks with a session log are always left alone and reported with deleted: false. Pass dry_run: true first to preview exactly what would be deleted, since real deletes are irreversible.',
+      inputSchema: {
+        cutoff_date: z.string().describe('ISO date; weeks with date < cutoff_date are candidates for deletion'),
+        dry_run: z.boolean().optional().describe('If true, compute the result without deleting anything'),
+      },
+      annotations: { destructiveHint: true },
+    },
+    async ({ cutoff_date, dry_run }) => {
+      const candidates = await pool.query(
+        `SELECT w.week, w.date, (sl.week IS NOT NULL) AS has_log
+         FROM weeks w
+         LEFT JOIN session_logs sl ON w.week = sl.week
+         WHERE w.date < $1
+         ORDER BY w.date ASC`,
+        [cutoff_date]
+      );
+
+      const weeksResult = [];
+      for (const row of candidates.rows) {
+        if (row.has_log) {
+          weeksResult.push({ week: row.week, date: row.date, has_log: true, deleted: false });
+          continue;
+        }
+        let deleted = false;
+        if (!dry_run) {
+          const deleteResult = await pool.query('DELETE FROM weeks WHERE week = $1', [row.week]);
+          deleted = !!deleteResult.rowCount;
+        }
+        weeksResult.push({ week: row.week, date: row.date, has_log: false, deleted });
+      }
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify({ cutoff_date, weeks: weeksResult }, null, 2) }],
+      };
+    }
+  );
+
+  server.registerTool(
     'duplicate_week',
     {
       title: 'Duplicate a week',
@@ -390,7 +595,7 @@ function createMcpServer(pool) {
     },
     async () => {
       const result = await pool.query(`
-        SELECT sl.week, w.date, w.cycle, w.label, sl.saved_at, sl.notes, sl.exercises, sl.athletes
+        SELECT sl.week, w.date, w.cycle, w.label, sl.saved_at, sl.notes, sl.exercises, sl.exercise_ids, sl.athletes
         FROM session_logs sl
         JOIN weeks w ON w.week = sl.week
         ORDER BY w.date ASC
@@ -403,6 +608,7 @@ function createMcpServer(pool) {
         savedAt: r.saved_at,
         notes: r.notes,
         exercises: r.exercises,
+        exercise_ids: r.exercise_ids,
         athletes: r.athletes,
       }));
       return { content: [{ type: 'text', text: JSON.stringify({ sessions }, null, 2) }] };

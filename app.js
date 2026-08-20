@@ -40,7 +40,8 @@ async function boot() {
 
     const [programMd, refMd] = await Promise.all([
       fetchText(`/api/weeks/${_manifest.currentWeek}/program`),
-      fetchText('/api/reference')
+      fetchText('/api/reference'),
+      loadExercisesTable(),
     ]);
 
     _programText = programMd;

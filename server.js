@@ -193,6 +193,18 @@ app.get('/api/reference', async (req, res) => {
 });
 
 // ─────────────────────────────────────
+//  API: Structured exercise reference
+// ─────────────────────────────────────
+app.get('/api/exercises', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM exercises ORDER BY category ASC, name ASC');
+    res.json({ exercises: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────
 //  API: Get log for a week
 // ─────────────────────────────────────
 app.get('/api/weeks/:week/log', async (req, res) => {
@@ -218,6 +230,7 @@ app.get('/api/weeks/:week/log', async (req, res) => {
         savedAt: l.saved_at,
         notes: l.notes,
         exercises: l.exercises,
+        exerciseIds: l.exercise_ids || {},
       } : null,
       athletes: l?.athletes || {
         clint: { bodyweight: 205, exercises: [] },
@@ -235,21 +248,22 @@ app.get('/api/weeks/:week/log', async (req, res) => {
 app.put('/api/weeks/:week/log', async (req, res) => {
   try {
     const { week } = req.params;
-    const { exercises, notes, savedAt, athletes } = req.body;
+    const { exercises, exerciseIds, notes, savedAt, athletes } = req.body;
 
     const weekCheck = await pool.query('SELECT week FROM weeks WHERE week = $1', [week]);
     if (!weekCheck.rows.length) return res.status(404).json({ error: 'Week not found' });
 
     await pool.query(
-      `INSERT INTO session_logs (week, saved_at, notes, exercises, athletes)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO session_logs (week, saved_at, notes, exercises, exercise_ids, athletes)
+       VALUES ($1, $2, $3, $4, $5, $6)
        ON CONFLICT (week) DO UPDATE
-         SET saved_at = $2, notes = $3, exercises = $4, athletes = $5, updated_at = NOW()`,
+         SET saved_at = $2, notes = $3, exercises = $4, exercise_ids = $5, athletes = $6, updated_at = NOW()`,
       [
         week,
         savedAt ? new Date(savedAt) : new Date(),
         notes || '',
         JSON.stringify(exercises || {}),
+        JSON.stringify(exerciseIds || {}),
         JSON.stringify(athletes || {}),
       ]
     );

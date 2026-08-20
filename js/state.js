@@ -6,9 +6,27 @@ let _programText = '';
 let _referenceText = '';
 let _archiveLoaded = false;
 let _logLoaded = false;
-let _sessionState = { exercises: {}, notes: '', savedAt: null };
+let _sessionState = { exercises: {}, exerciseIds: {}, notes: '', savedAt: null };
 let _parsedProgram = null;
 let _charts = {};
+
+// ─────────────────────────────────────
+//  Structured exercise reference (exercises table) — id/name -> {category, subtag, ...}
+// ─────────────────────────────────────
+let _exercisesById = {};
+let _exercisesByName = {};
+
+async function loadExercisesTable() {
+  try {
+    const { exercises } = await fetchJSON('/api/exercises');
+    _exercisesById = {};
+    _exercisesByName = {};
+    for (const ex of exercises || []) {
+      _exercisesById[ex.id] = ex;
+      _exercisesByName[ex.name.toLowerCase()] = ex;
+    }
+  } catch (e) { /* structured reference is optional; keyword fallback still works */ }
+}
 
 // ─────────────────────────────────────
 //  URL ?session= persistence

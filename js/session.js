@@ -4,11 +4,14 @@
 function buildSessionExercisesFromProgram() {
   if (!_parsedProgram) return;
   if (!_sessionState.exercises) _sessionState.exercises = {};
+  if (!_sessionState.exerciseIds) _sessionState.exerciseIds = {};
   for (const block of _parsedProgram) {
     for (const ex of block.exercises) {
       if (!(_sessionState.exercises[ex.name] !== undefined)) {
         _sessionState.exercises[ex.name] = '';
       }
+      // Keep in sync even across re-renders, in case program_md gained/changed an id.
+      _sessionState.exerciseIds[ex.name] = ex.id || null;
     }
   }
 }

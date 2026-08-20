@@ -61,6 +61,8 @@ function mdToHtml(md) {
 
 function inlineFormat(s) {
   return s
+    .replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:8px;margin:6px 0">')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
     .replace(/`(.+?)`/g, '<code style="background:var(--surface2);padding:1px 5px;border-radius:4px;font-size:0.9em">$1</code>');

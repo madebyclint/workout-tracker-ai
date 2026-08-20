@@ -217,8 +217,16 @@ const EXERCISE_META = {
   'Reverse Crunch with Hip Lift':                 { cat:'core', sub:'Flexion' },
 };
 
-// Returns { cat, sub } — falls back gracefully for unknown exercises
-function getExerciseMeta(name) {
+// Returns { cat, sub } — checks the structured exercises table (by id, then by
+// exact name) before falling back to the legacy keyword rules below.
+function getExerciseMeta(name, id) {
+  if (id && _exercisesById[id]) {
+    const ex = _exercisesById[id];
+    return { cat: ex.category, sub: ex.subtag || '' };
+  }
+  const structured = _exercisesByName[name.toLowerCase()];
+  if (structured) return { cat: structured.category, sub: structured.subtag || '' };
+
   if (EXERCISE_META[name]) return EXERCISE_META[name];
   const n = name.toLowerCase();
   if (n.includes('hip thrust') || n.includes('glute bridge')) return { cat:'legs', sub:'Glute' };
@@ -239,14 +247,15 @@ function getExerciseMeta(name) {
 }
 
 // Convenience: just the main cat (for chart aggregation)
-function categorizeExercise(name) {
-  return getExerciseMeta(name).cat;
+function categorizeExercise(name, id) {
+  return getExerciseMeta(name, id).cat;
 }
 
 // Returns an HTML badge string for an exercise
-function exCatBadgeHtml(name) {
-  const { cat, sub } = getExerciseMeta(name);
-  return `<span class="ex-cat-badge ex-cat-${cat}">${cat.charAt(0).toUpperCase()+cat.slice(1)}</span><span class="ex-sub-badge">${sub}</span>`;
+function exCatBadgeHtml(name, id) {
+  const { cat, sub } = getExerciseMeta(name, id);
+  const catLabel = cat === 'full_body' ? 'Full Body' : cat.charAt(0).toUpperCase() + cat.slice(1);
+  return `<span class="ex-cat-badge ex-cat-${cat}">${catLabel}</span>${sub ? `<span class="ex-sub-badge">${sub}</span>` : ''}`;
 }
 
 // ─────────────────────────────────────
@@ -341,11 +350,12 @@ function _buildLastSessionHtml(s, w) {
   const statusLabel = { complete: 'Done', partial: 'Partial', skip: 'Skipped' };
   const statusClass = { complete: 'log-status-complete', partial: 'log-status-partial', skip: 'log-status-skip' };
 
+  const exIds = s.exerciseIds || {};
   let exRows = '';
   for (const [name, status] of Object.entries(exs)) {
     if (!status) continue;
     exRows += `<div class="log-ex-row">
-      <span class="log-ex-name-wrap">${exCatBadgeHtml(name)}<span class="log-ex-name">${name}</span></span>
+      <span class="log-ex-name-wrap">${exCatBadgeHtml(name, exIds[name])}<span class="log-ex-name">${name}</span></span>
       <span class="log-status-badge ${statusClass[status]}">${statusLabel[status]}</span>
     </div>`;
   }
@@ -393,20 +403,21 @@ function _renderLogBalance() {
   const windowDays = { week: 7, month: 30, year: 365, all: null }[_logWindow];
   const cutoff = windowDays ? now - windowDays * 86400000 : 0;
 
-  const counts = { push: 0, pull: 0, legs: 0, core: 0 };
+  const counts = { push: 0, pull: 0, legs: 0, core: 0, full_body: 0 };
   let sessionCount = 0;
 
   for (const s of _allLogSessions) {
     const t = s.savedAt ? new Date(s.savedAt).getTime() : now;
     if (t < cutoff) continue;
     sessionCount++;
+    const exIds = s.exerciseIds || {};
     for (const [name, status] of Object.entries(s.exercises || {})) {
       if (status !== 'complete' && status !== 'partial') continue;
-      counts[categorizeExercise(name)]++;
+      counts[categorizeExercise(name, exIds[name])]++;
     }
   }
 
-  const total = counts.push + counts.pull + counts.legs + counts.core;
+  const total = counts.push + counts.pull + counts.legs + counts.core + counts.full_body;
   const periodLabel = { week:'last 7 days', month:'last 30 days', year:'last year', all:'all time' }[_logWindow];
 
   if (total === 0) {
@@ -422,7 +433,8 @@ function _renderLogBalance() {
     { key:'pull', label:'Pull',  color:'#3ecf8e' },
     { key:'legs', label:'Legs',  color:'#e05c97' },
     { key:'core', label:'Core',  color:'#f5c542' },
-  ];
+    { key:'full_body', label:'Full Body', color:'#8a8a8a' },
+  ].filter(c => counts[c.key] > 0 || c.key !== 'full_body');
 
   el.innerHTML = `
     <div style="font-size:0.72rem;color:var(--text2);margin-bottom:14px">
