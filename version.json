@@ -1,6 +1,6 @@
 {
-  "hash": "fcc0dac",
-  "full": "fcc0dacaaeba67f49213f3330bd4d9e2aae383ca",
-  "date": "2026-05-09T10:16:49-04:00",
-  "message": "fix: bump SW cache to v2 to force cache invalidation; add app.js to precache"
+  "hash": "a356320",
+  "full": "a356320cc1ade715f262c26c589d6653f836ffae",
+  "date": "2026-08-20T08:00:03-07:00",
+  "message": "Fix service worker precache 404 that trapped browsers on stale versions"
 }
