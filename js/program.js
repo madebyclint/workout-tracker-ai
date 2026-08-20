@@ -5,8 +5,11 @@ function parseProgram(md) {
   const blocks = [];
   let currentBlock = null;
   let currentExercise = null;
+  const lines = md.split('\n');
 
-  for (const line of md.split('\n')) {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
     const blockMatch = line.match(/^## Block \d+ — (.+)/);
     if (blockMatch) {
       if (currentExercise && currentBlock) currentBlock.exercises.push(currentExercise);
@@ -16,10 +19,35 @@ function parseProgram(md) {
       continue;
     }
 
-    const exMatch = line.match(/^### \d+\. (.+?)(?:\s+\[([a-zA-Z0-9_-]+)\])?\s+`([^`]+)`/);
-    if (exMatch && currentBlock) {
+    const headingMatch = line.match(/^### \d+\.\s+(.+)/);
+    if (headingMatch && currentBlock) {
       if (currentExercise) currentBlock.exercises.push(currentExercise);
-      currentExercise = { name: exMatch[1].trim(), id: exMatch[2] || null, scheme: exMatch[3].trim(), muscles: '', scaling: { clint: '', wife: '' }, notes: '' };
+
+      let rest = headingMatch[1].trim();
+      let id = null;
+      const idMatch = rest.match(/^(.*?)\s+\[([a-zA-Z0-9_-]+)\](.*)$/);
+      if (idMatch) {
+        id = idMatch[2];
+        rest = (idMatch[1] + idMatch[3]).trim();
+      }
+
+      let scheme = '';
+      const schemeMatch = rest.match(/^(.*?)\s*`([^`]+)`\s*$/);
+      if (schemeMatch) {
+        rest = schemeMatch[1].trim();
+        scheme = schemeMatch[2].trim();
+      } else {
+        // Scheme may be on its own line below the heading instead of inline.
+        let j = i + 1;
+        while (j < lines.length && lines[j].trim() === '') j++;
+        const nextSchemeMatch = lines[j] && lines[j].trim().match(/^`([^`]+)`$/);
+        if (nextSchemeMatch) {
+          scheme = nextSchemeMatch[1].trim();
+          i = j;
+        }
+      }
+
+      currentExercise = { name: rest, id, scheme, muscles: '', scaling: { clint: '', wife: '' }, notes: '' };
       continue;
     }
 
