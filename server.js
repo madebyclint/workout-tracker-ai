@@ -118,6 +118,18 @@ if (APP_URL && OAUTH_LOGIN_PASSWORD) {
   );
 }
 
+// Service worker — served dynamically (ahead of express.static below) so
+// its cache-busting token always matches the deployed build. A build-time
+// file stamp doesn't survive Nixpacks' build (it ends with a `COPY . /app`
+// from the original git source, after the build command runs, which
+// discards any mutation to a git-tracked file like sw.js) — substituting
+// at request time from version.json sidesteps that entirely.
+app.get('/sw.js', (_req, res) => {
+  const template = fs.readFileSync(path.join(__dirname, 'sw.js'), 'utf8');
+  const stamped = template.replaceAll('__CACHE_VERSION__', getVersion().hash);
+  res.type('application/javascript').set('Cache-Control', 'no-cache').send(stamped);
+});
+
 // Never let express.static hand out server-internal source/config —
 // mcp/, db/, scripts/, server.js, package*.json, node_modules, dotfiles.
 app.use((req, res, next) => {

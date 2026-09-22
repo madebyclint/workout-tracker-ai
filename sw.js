@@ -1,4 +1,10 @@
-const CACHE_NAME = 'workout-tracker-v6';
+// The token below is substituted at request time by the /sw.js route in
+// server.js with the deployed build's commit hash (see version.json), so
+// this file is byte-different on every real deploy — the browser's SW
+// update check (a byte-for-byte diff of sw.js) then reliably finds it.
+// Served as-is (literal token) only for direct static access, e.g. tooling
+// that reads the file off disk instead of fetching it.
+const CACHE_NAME = 'workout-tracker-__CACHE_VERSION__';
 
 // Core shell assets to cache on install
 const PRECACHE_ASSETS = [
