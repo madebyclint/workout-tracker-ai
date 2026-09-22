@@ -37,3 +37,21 @@ if (process.env.RAILWAY_GIT_COMMIT_SHA) {
 const out = path.join(__dirname, '..', 'version.json');
 fs.writeFileSync(out, JSON.stringify(version, null, 2));
 console.log('version.json written:', version.hash, version.date);
+
+// Stamp the service worker's cache name with this build's commit hash, so
+// sw.js is byte-different on every deploy — otherwise the browser's SW
+// update check (a byte-for-byte diff of sw.js) sees no change, never
+// installs the new worker, and the cache-first strategy in the fetch
+// handler keeps serving last deploy's JS/CSS indefinitely.
+const swPath = path.join(__dirname, '..', 'sw.js');
+const swSrc = fs.readFileSync(swPath, 'utf8');
+const stamped = swSrc.replace(
+  /const CACHE_NAME = '[^']*';/,
+  `const CACHE_NAME = 'workout-tracker-${version.hash}';`
+);
+if (stamped === swSrc) {
+  console.warn('sw.js CACHE_NAME line not found — service worker cache was not stamped.');
+} else {
+  fs.writeFileSync(swPath, stamped);
+  console.log('sw.js stamped with cache name: workout-tracker-' + version.hash);
+}

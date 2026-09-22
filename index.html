@@ -86,7 +86,28 @@
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js');
+      navigator.serviceWorker.register('/sw.js').then((reg) => {
+        // sw.js is stamped with the commit hash at build time, so a real
+        // deploy is always a byte-different file — the browser's own
+        // update check (a diff of sw.js) reliably finds it. Ask it to
+        // check now, then again whenever the tab regains focus, instead
+        // of waiting for the browser's own multi-hour update interval.
+        reg.update();
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') reg.update();
+        });
+      });
+
+      // The new worker calls skipWaiting()/clients.claim() itself (see
+      // sw.js), so once it takes control the tab is still running the old
+      // JS/CSS in memory — reload once to pick it up. Guard against the
+      // reload firing twice (controllerchange can fire more than once).
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (reloaded) return;
+        reloaded = true;
+        window.location.reload();
+      });
     });
   }
 </script>
