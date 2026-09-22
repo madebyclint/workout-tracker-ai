@@ -615,6 +615,76 @@ function createMcpServer(pool) {
     }
   );
 
+  server.registerTool(
+    'update_session',
+    {
+      title: 'Create or update a logged session',
+      description:
+        'Upsert the session log for a week — exercise statuses, per-exercise ids, notes, saved-at timestamp, and per-athlete bodyweight/exercises. Creates the log if the week has none yet, otherwise overwrites just the fields provided (omitted fields keep their current value). Use this to log a session on Claude\'s behalf or correct a mistake after the fact (e.g. a wrong weight or status).',
+      inputSchema: {
+        week: z.string().describe('Week identifier, e.g. "2026-W20"'),
+        exercises: z.record(z.string(), z.enum(['complete', 'partial', 'skip'])).optional()
+          .describe('Map of exercise name -> status'),
+        exercise_ids: z.record(z.string(), z.string()).optional()
+          .describe('Map of exercise name -> structured exercise id, for reliable category tagging'),
+        notes: z.string().optional(),
+        saved_at: z.string().optional().describe('ISO timestamp; defaults to now on create, unchanged on update'),
+        athletes: z.record(z.string(), z.any()).optional().describe('Per-athlete bodyweight/exercise data'),
+      },
+      annotations: { destructiveHint: false },
+    },
+    async ({ week, exercises, exercise_ids, notes, saved_at, athletes }) => {
+      const weekCheck = await pool.query('SELECT week FROM weeks WHERE week = $1', [week]);
+      if (!weekCheck.rows.length) {
+        return { content: [{ type: 'text', text: `Week not found: ${week}` }], isError: true };
+      }
+
+      const existing = await pool.query('SELECT * FROM session_logs WHERE week = $1', [week]);
+      const prev = existing.rows[0];
+
+      const nextSavedAt = saved_at ? new Date(saved_at) : (prev ? prev.saved_at : new Date());
+      const nextNotes = notes !== undefined ? notes : (prev ? prev.notes : '');
+      const nextExercises = exercises !== undefined ? exercises : (prev ? prev.exercises : {});
+      const nextExerciseIds = exercise_ids !== undefined ? exercise_ids : (prev ? prev.exercise_ids : {});
+      const nextAthletes = athletes !== undefined ? athletes : (prev ? prev.athletes : {});
+
+      await pool.query(
+        `INSERT INTO session_logs (week, saved_at, notes, exercises, exercise_ids, athletes)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (week) DO UPDATE
+           SET saved_at = $2, notes = $3, exercises = $4, exercise_ids = $5, athletes = $6, updated_at = NOW()`,
+        [
+          week,
+          nextSavedAt,
+          nextNotes,
+          JSON.stringify(nextExercises),
+          JSON.stringify(nextExerciseIds),
+          JSON.stringify(nextAthletes),
+        ]
+      );
+
+      return { content: [{ type: 'text', text: `${prev ? 'Updated' : 'Created'} session log for week ${week}.` }] };
+    }
+  );
+
+  server.registerTool(
+    'delete_session',
+    {
+      title: 'Delete a logged session',
+      description:
+        'Delete the session log for a week — clears the logged performance data but leaves the week/program itself in place, so it can be re-logged later. To delete the week entirely, use delete_week (which refuses while a session log exists).',
+      inputSchema: { week: z.string().describe('Week identifier, e.g. "2026-W20"') },
+      annotations: { destructiveHint: true },
+    },
+    async ({ week }) => {
+      const result = await pool.query('DELETE FROM session_logs WHERE week = $1', [week]);
+      if (!result.rowCount) {
+        return { content: [{ type: 'text', text: `No session log for week: ${week}` }], isError: true };
+      }
+      return { content: [{ type: 'text', text: `Deleted session log for week ${week}.` }] };
+    }
+  );
+
   return server;
 }
 

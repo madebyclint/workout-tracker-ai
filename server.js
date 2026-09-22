@@ -275,6 +275,38 @@ app.put('/api/weeks/:week/log', async (req, res) => {
 });
 
 // ─────────────────────────────────────
+//  API: Delete log for a week (keeps the week/program itself)
+// ─────────────────────────────────────
+app.delete('/api/weeks/:week/log', async (req, res) => {
+  try {
+    const { week } = req.params;
+    const result = await pool.query('DELETE FROM session_logs WHERE week = $1', [week]);
+    if (!result.rowCount) return res.status(404).json({ error: 'No session log for that week' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────
+//  API: Delete a week (refuses if it still has a session log)
+// ─────────────────────────────────────
+app.delete('/api/weeks/:week', async (req, res) => {
+  try {
+    const { week } = req.params;
+    const logCheck = await pool.query('SELECT 1 FROM session_logs WHERE week = $1', [week]);
+    if (logCheck.rows.length) {
+      return res.status(409).json({ error: 'Week has a saved session log; delete the session first.' });
+    }
+    const result = await pool.query('DELETE FROM weeks WHERE week = $1', [week]);
+    if (!result.rowCount) return res.status(404).json({ error: 'Week not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────
 //  API: Add a new week
 // ─────────────────────────────────────
 app.post('/api/weeks', async (req, res) => {

@@ -315,10 +315,11 @@ async function renderLog() {
     return;
   }
 
-  const last = _allLogSessions[0];
-  const lastWeek = last._week || null;
+  // Build layout — balance chart first, full session history below
+  const historyHtml = _allLogSessions
+    .map((s, i) => _buildSessionCardHtml(s, s._week || null, i))
+    .join('<div style="height:10px"></div>');
 
-  // Build layout — balance chart first, last session below
   el.innerHTML = `
     <div class="card">
       <div class="card-title" style="margin-bottom:10px">Body Balance</div>
@@ -330,12 +331,45 @@ async function renderLog() {
       </div>
       <div id="logBalanceContent"></div>
     </div>
-    <div style="margin-top:14px">${_buildLastSessionHtml(last, lastWeek)}</div>`;
+    <div style="margin-top:14px;font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2)">History</div>
+    <div style="margin-top:8px">${historyHtml}</div>`;
 
   _renderLogBalance();
 }
 
-function _buildLastSessionHtml(s, w) {
+// Category color map shared with the Body Balance donut/legend
+const LOG_CAT_COLORS = { push:'#7c6af7', pull:'#3ecf8e', legs:'#e05c97', core:'#f5c542', full_body:'#8a8a8a' };
+const LOG_CAT_LABELS = { push:'Push', pull:'Pull', legs:'Legs', core:'Core', full_body:'Full Body' };
+
+// Small per-session category breakdown — reuses the same bar visual as the
+// Body Balance legend, sized down for a per-card summary.
+function _buildSessionMiniBarsHtml(s) {
+  const exIds = s.exerciseIds || {};
+  const counts = { push: 0, pull: 0, legs: 0, core: 0, full_body: 0 };
+  for (const [name, status] of Object.entries(s.exercises || {})) {
+    if (status !== 'complete' && status !== 'partial') continue;
+    counts[categorizeExercise(name, exIds[name])]++;
+  }
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
+  if (!total) return '';
+
+  const max = Math.max(...Object.values(counts));
+  const rows = Object.entries(counts)
+    .filter(([, n]) => n > 0)
+    .map(([cat, n]) => `
+      <div class="session-mini-bar-row">
+        <span class="session-mini-bar-label" style="color:${LOG_CAT_COLORS[cat]}">${LOG_CAT_LABELS[cat]}</span>
+        <div class="log-legend-bar-wrap" style="height:5px">
+          <div class="log-legend-bar" style="width:${Math.round(n / max * 100)}%;background:${LOG_CAT_COLORS[cat]}"></div>
+        </div>
+        <span class="log-legend-count">${n}</span>
+      </div>`)
+    .join('');
+
+  return `<div class="session-mini-bars">${rows}</div>`;
+}
+
+function _buildSessionCardHtml(s, w, idx) {
   const exs = s.exercises || {};
   const wLabel = w ? `${w.week} · Week ${w.cycle}: ${w.label}` : 'Current Session';
   const savedLabel = s.savedAt
@@ -345,7 +379,6 @@ function _buildLastSessionHtml(s, w) {
   const done   = Object.values(exs).filter(v => v === 'complete').length;
   const partial = Object.values(exs).filter(v => v === 'partial').length;
   const skipped = Object.values(exs).filter(v => v === 'skip').length;
-  const total  = Object.values(exs).filter(v => v).length;
 
   const statusLabel = { complete: 'Done', partial: 'Partial', skip: 'Skipped' };
   const statusClass = { complete: 'log-status-complete', partial: 'log-status-partial', skip: 'log-status-skip' };
@@ -369,16 +402,43 @@ function _buildLastSessionHtml(s, w) {
     ? `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:0.8rem;color:var(--text2);line-height:1.5"><strong style="color:var(--text)">Notes:</strong> ${s.notes}</div>`
     : '';
 
-  return `<div class="card">
-    <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:4px">Last Workout</div>
-    <div class="card-title" style="margin-bottom:2px">${wLabel}</div>
+  const deleteBtn = w
+    ? `<button class="session-delete-btn" title="Delete this session log" onclick="deleteSession('${w.week}')">🗑</button>`
+    : '';
+
+  return `<div class="card" id="session-card-${idx}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div style="min-width:0">
+        <div style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text2);margin-bottom:4px">${idx === 0 ? 'Last Workout' : 'Session'}</div>
+        <div class="card-title" style="margin-bottom:2px">${wLabel}</div>
+      </div>
+      ${deleteBtn}
+    </div>
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
       <span style="font-size:0.72rem;color:var(--text2)">${savedLabel}</span>
       <span style="font-size:0.72rem">${summaryParts.join('<span style="color:var(--border)"> · </span>')}</span>
     </div>
+    ${_buildSessionMiniBarsHtml(s)}
     ${exRows}
     ${notesHtml}
   </div>`;
+}
+
+// ─────────────────────────────────────
+//  Delete a session log (keeps the week/program itself)
+// ─────────────────────────────────────
+async function deleteSession(weekId) {
+  if (!confirm('Delete this session log? This cannot be undone.')) return;
+  try {
+    const r = await fetch(`/api/weeks/${weekId}/log`, { method: 'DELETE' });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    _allLogSessions = _allLogSessions.filter(s => (s._week?.week || null) !== weekId);
+    _logLoaded = false;
+    await renderLog();
+    showToast('Session deleted');
+  } catch (e) {
+    showToast('Could not delete session: ' + e.message);
+  }
 }
 
 // ─────────────────────────────────────
@@ -609,9 +669,13 @@ async function renderArchive() {
               ${isSuggested && !isActive ? '<span class="archive-suggestion-badge">▶ UP NEXT</span>' : ''}
               ${w.has_log && !isActive ? '<span class="archive-done-badge">✓ Done</span>' : ''}
             </div>
-            <button class="activate-btn" onclick="event.stopPropagation();activateSession('${w.week}')" ${isActive ? 'disabled' : ''}>
-              ${isActive ? 'Active' : 'Activate'}
-            </button>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <button class="activate-btn" onclick="event.stopPropagation();activateSession('${w.week}')" ${isActive ? 'disabled' : ''}>
+                ${isActive ? 'Active' : 'Activate'}
+              </button>
+              <button class="week-delete-btn" onclick="event.stopPropagation();deleteWeek('${w.week}')"
+                ${w.has_log ? 'disabled title="Has a logged session — delete the session first"' : 'title="Delete this week"'}>🗑</button>
+            </div>
           </div>
         </div>`;
     }
@@ -634,6 +698,19 @@ async function activateSession(weekId) {
     setTimeout(() => window.location.href = '/', 1000);
   } catch (e) {
     showToast('Could not activate: ' + e.message);
+  }
+}
+
+async function deleteWeek(weekId) {
+  if (!confirm(`Delete week ${weekId}? This removes its program entirely and cannot be undone.`)) return;
+  try {
+    const r = await fetch(`/api/weeks/${weekId}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    showToast('Week deleted');
+    _archiveLoaded = false;
+    renderArchive();
+  } catch (e) {
+    showToast('Could not delete week: ' + e.message);
   }
 }
 

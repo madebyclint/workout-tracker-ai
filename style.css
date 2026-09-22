@@ -656,6 +656,45 @@ header {
   cursor: default;
   opacity: 1;
 }
+.week-delete-btn,
+.session-delete-btn {
+  flex-shrink: 0;
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text2);
+  border-radius: 6px;
+  font-size: 0.7rem;
+  padding: 5px 9px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
+}
+.week-delete-btn:hover,
+.session-delete-btn:hover { color: var(--red); border-color: var(--red); }
+.week-delete-btn:disabled {
+  color: var(--text2);
+  opacity: 0.35;
+  cursor: default;
+}
+
+/* ─── Session history mini bar chart ─── */
+.session-mini-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.session-mini-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.66rem;
+}
+.session-mini-bar-label {
+  font-weight: 600;
+  width: 54px;
+  flex-shrink: 0;
+}
 .history-item-header {
   display: flex;
   justify-content: space-between;
