@@ -68,6 +68,7 @@ function renderSession() {
         <div class="ex-status-header">
           <span class="ex-status-name">${ex.name}</span>
           <span class="ex-status-scheme">${ex.scheme}</span>
+          ${exVideoLinkHtml(ex.name, ex.id)}
         </div>
         <div class="ex-status-btns">
           <button class="ex-btn ex-btn-complete${status === 'complete' ? ' active' : ''}"

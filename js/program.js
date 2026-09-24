@@ -114,7 +114,7 @@ function renderProgram(md) {
       html += `<div class="exercise-item">
         <div class="exercise-name-row">
           <span class="exercise-name">${ex.name}</span>
-          <span class="exercise-cat-badges">${exCatBadgeHtml(ex.name, ex.id)}</span>
+          <span class="exercise-cat-badges">${exVideoLinkHtml(ex.name, ex.id)}${exCatBadgeHtml(ex.name, ex.id)}</span>
         </div>
         <div class="exercise-scheme">${ex.scheme}</div>`;
 

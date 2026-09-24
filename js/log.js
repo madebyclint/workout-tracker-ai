@@ -258,6 +258,21 @@ function exCatBadgeHtml(name, id) {
   return `<span class="ex-cat-badge ex-cat-${cat}">${catLabel}</span>${sub ? `<span class="ex-sub-badge">${sub}</span>` : ''}`;
 }
 
+// Looks up video_url from the structured exercises table (by id, then by
+// exact name) — the only place that field is set (via upsert_exercise /
+// bulk_upsert_exercises over MCP); there's no markdown fallback for it.
+function getExerciseVideoUrl(name, id) {
+  if (id && _exercisesById[id]?.video_url) return _exercisesById[id].video_url;
+  return _exercisesByName[name.toLowerCase()]?.video_url || null;
+}
+
+// Returns an HTML link to the exercise's how-to video, or '' if none is set.
+function exVideoLinkHtml(name, id) {
+  const url = getExerciseVideoUrl(name, id);
+  if (!url || !/^https?:\/\//i.test(url)) return '';
+  return `<a class="exercise-video-link" href="${url}" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">▶ Watch</a>`;
+}
+
 // ─────────────────────────────────────
 //  Log state
 // ─────────────────────────────────────

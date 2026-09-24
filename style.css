@@ -175,6 +175,18 @@ header {
   letter-spacing: 0.3px;
   text-transform: uppercase;
 }
+.exercise-video-link {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-decoration: none;
+  padding: 2px 7px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.exercise-video-link:hover { background: rgba(99,179,237,0.12); }
 .ex-cat-push { background: rgba(124,106,247,0.2); color: #9d8eff; }
 .ex-cat-pull { background: rgba(62,207,142,0.2);  color: #3ecf8e; }
 .ex-cat-legs { background: rgba(224,92,151,0.2);  color: #e05c97; }
