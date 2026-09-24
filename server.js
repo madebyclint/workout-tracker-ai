@@ -158,7 +158,7 @@ app.get('/api/config', async (req, res) => {
 app.get('/api/weeks', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT w.week, w.date, w.cycle, w.label,
+      SELECT w.week, w.date, w.cycle, w.label, w.archived,
              (sl.week IS NOT NULL) AS has_log
       FROM weeks w
       LEFT JOIN session_logs sl ON w.week = sl.week
@@ -313,6 +313,26 @@ app.delete('/api/weeks/:week', async (req, res) => {
     const result = await pool.query('DELETE FROM weeks WHERE week = $1', [week]);
     if (!result.rowCount) return res.status(404).json({ error: 'Week not found' });
     res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────
+//  API: Archive / unarchive a week — a reversible alternative to deleting
+//  it, for hiding old weeks from the Workouts tab without touching their
+//  program or session log.
+// ─────────────────────────────────────
+app.put('/api/weeks/:week/archive', async (req, res) => {
+  try {
+    const { week } = req.params;
+    const { archived } = req.body;
+    if (typeof archived !== 'boolean') {
+      return res.status(400).json({ error: 'archived (boolean) is required' });
+    }
+    const result = await pool.query('UPDATE weeks SET archived = $1 WHERE week = $2', [archived, week]);
+    if (!result.rowCount) return res.status(404).json({ error: 'Week not found' });
+    res.json({ success: true, archived });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -38,6 +38,10 @@ ALTER TABLE session_logs ADD COLUMN IF NOT EXISTS exercise_ids JSONB NOT NULL DE
 -- weeks table already existed before program_md was added.
 ALTER TABLE weeks ADD COLUMN IF NOT EXISTS program_md TEXT;
 
+-- Archived weeks are hidden from the Workouts tab's active list but keep
+-- their program/log intact — a reversible alternative to deleting a week.
+ALTER TABLE weeks ADD COLUMN IF NOT EXISTS archived BOOLEAN NOT NULL DEFAULT FALSE;
+
 -- Structured exercise reference — replaces name-text keyword inference with a
 -- canonical id/category/subtag per exercise. See mcp/server.js's exercise_id
 -- lookup in program_md parsing.

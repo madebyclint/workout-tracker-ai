@@ -117,13 +117,13 @@ function createMcpServer(pool) {
     {
       title: 'List weeks',
       description:
-        'List all training weeks with their cycle (A/B/C/D), date, label, and whether a session log exists. Use this to find the most recent week(s) before generating a new one.',
+        'List all training weeks with their cycle (A/B/C/D), date, label, whether a session log exists, and whether it\'s archived. Use this to find the most recent week(s) before generating a new one.',
       inputSchema: {},
       annotations: { readOnlyHint: true },
     },
     async () => {
       const result = await pool.query(`
-        SELECT w.week, w.date, w.cycle, w.label,
+        SELECT w.week, w.date, w.cycle, w.label, w.archived,
                (sl.week IS NOT NULL) AS has_log
         FROM weeks w
         LEFT JOIN session_logs sl ON w.week = sl.week
@@ -478,6 +478,41 @@ function createMcpServer(pool) {
         return { content: [{ type: 'text', text: `Week not found: ${week}` }], isError: true };
       }
       return { content: [{ type: 'text', text: `Deleted week ${week}.` }] };
+    }
+  );
+
+  server.registerTool(
+    'archive_week',
+    {
+      title: 'Archive a week',
+      description:
+        'Hide a week from the app\'s active Workouts list without deleting it — its program and session log (if any) are untouched, and it can be restored with unarchive_week. Use this instead of delete_week for old weeks you want out of the way but not gone.',
+      inputSchema: { week: z.string().describe('Week identifier, e.g. "2026-W17"') },
+      annotations: { destructiveHint: false },
+    },
+    async ({ week }) => {
+      const result = await pool.query('UPDATE weeks SET archived = TRUE WHERE week = $1', [week]);
+      if (!result.rowCount) {
+        return { content: [{ type: 'text', text: `Week not found: ${week}` }], isError: true };
+      }
+      return { content: [{ type: 'text', text: `Archived week ${week}.` }] };
+    }
+  );
+
+  server.registerTool(
+    'unarchive_week',
+    {
+      title: 'Unarchive a week',
+      description: 'Restore an archived week back to the app\'s active Workouts list.',
+      inputSchema: { week: z.string().describe('Week identifier, e.g. "2026-W17"') },
+      annotations: { destructiveHint: false },
+    },
+    async ({ week }) => {
+      const result = await pool.query('UPDATE weeks SET archived = FALSE WHERE week = $1', [week]);
+      if (!result.rowCount) {
+        return { content: [{ type: 'text', text: `Week not found: ${week}` }], isError: true };
+      }
+      return { content: [{ type: 'text', text: `Unarchived week ${week}.` }] };
     }
   );
 

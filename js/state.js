@@ -4,7 +4,8 @@
 let _manifest = null;
 let _programText = '';
 let _referenceText = '';
-let _archiveLoaded = false;
+let _workoutsLoaded = false;
+let _archivedLoaded = false;
 let _logLoaded = false;
 let _sessionState = { exercises: {}, exerciseIds: {}, notes: '', savedAt: null };
 let _parsedProgram = null;

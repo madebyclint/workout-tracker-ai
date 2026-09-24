@@ -555,7 +555,7 @@ function renderReference(md) {
 }
 
 // ─────────────────────────────────────
-//  Render ARCHIVE tab
+//  Render WORKOUTS tab (active weeks — excludes archived)
 // ─────────────────────────────────────
 // Sort key: "2026-W24-A" → "2026-24-A" (week padded to 2 digits)
 function _weekSortKey(w) {
@@ -564,18 +564,19 @@ function _weekSortKey(w) {
   return `${m[1]}-${m[2].padStart(2, '0')}-${m[3] || 'A'}`;
 }
 
-async function renderArchive() {
-  if (_archiveLoaded) return;
-  _archiveLoaded = true;
+async function renderWorkouts() {
+  if (_workoutsLoaded) return;
+  _workoutsLoaded = true;
 
-  const el = document.getElementById('archiveContent');
+  const el = document.getElementById('workoutsContent');
   try {
     const index = await fetchJSON('/api/weeks');
-    const weeks = (index.weeks || []).slice().sort((a, b) =>
-      _weekSortKey(a).localeCompare(_weekSortKey(b)));
+    const weeks = (index.weeks || [])
+      .filter(w => !w.archived)
+      .sort((a, b) => _weekSortKey(a).localeCompare(_weekSortKey(b)));
 
     if (!weeks.length) {
-      el.innerHTML = '<div class="empty-state"><div class="icon">📅</div>No sessions yet.</div>';
+      el.innerHTML = '<div class="empty-state"><div class="icon">📅</div>No workouts yet.</div>';
       return;
     }
 
@@ -656,7 +657,7 @@ async function renderArchive() {
       const shortLabel  = w.label.replace(/Phase \d+ — /, '');
       const tagClass    = cycleTag[w.cycle] || 'tag-core';
       html += `
-        <div class="history-item${isActive ? ' history-item-active' : isSuggested ? ' history-item-suggested' : ''}" onclick="loadArchivedWeek('${w.week}')">
+        <div class="history-item${isActive ? ' history-item-active' : isSuggested ? ' history-item-suggested' : ''}" onclick="loadWeekProgram('${w.week}', 'workouts')">
           <div class="history-item-header">
             <span class="history-week">${w.week}</span>
             <span class="history-date">${w.date}</span>
@@ -673,8 +674,7 @@ async function renderArchive() {
               <button class="activate-btn" onclick="event.stopPropagation();activateSession('${w.week}')" ${isActive ? 'disabled' : ''}>
                 ${isActive ? 'Active' : 'Activate'}
               </button>
-              <button class="week-delete-btn" onclick="event.stopPropagation();deleteWeek('${w.week}')"
-                ${w.has_log ? 'disabled title="Has a logged session — delete the session first"' : 'title="Delete this week"'}>🗑</button>
+              <button class="week-archive-btn" onclick="event.stopPropagation();archiveWeek('${w.week}', ${isActive})" title="Archive this week">📦</button>
             </div>
           </div>
         </div>`;
@@ -682,7 +682,7 @@ async function renderArchive() {
 
     el.innerHTML = html;
   } catch (e) {
-    el.innerHTML = `<div class="error-msg">Could not load archive: ${e.message}</div>`;
+    el.innerHTML = `<div class="error-msg">Could not load workouts: ${e.message}</div>`;
   }
 }
 
@@ -701,27 +701,130 @@ async function activateSession(weekId) {
   }
 }
 
-async function deleteWeek(weekId) {
+// Archiving is reversible (unlike delete), so no confirm() — just do it and
+// let the user restore from the Archive tab if it was a mistake.
+async function archiveWeek(weekId, isActive) {
+  if (isActive) {
+    showToast('Activate a different week first — can\'t archive the current one.');
+    return;
+  }
+  try {
+    const r = await fetch(`/api/weeks/${weekId}/archive`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ archived: true }),
+    });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    showToast('Week archived — find it in the Archive tab');
+    _workoutsLoaded = false;
+    _archivedLoaded = false;
+    renderWorkouts();
+  } catch (e) {
+    showToast('Could not archive week: ' + e.message);
+  }
+}
+
+async function unarchiveWeek(weekId) {
+  try {
+    const r = await fetch(`/api/weeks/${weekId}/archive`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ archived: false }),
+    });
+    if (!r.ok) throw new Error((await r.json()).error || r.status);
+    showToast('Week restored to Workouts');
+    _workoutsLoaded = false;
+    _archivedLoaded = false;
+    renderArchivedList();
+  } catch (e) {
+    showToast('Could not restore week: ' + e.message);
+  }
+}
+
+async function deleteWeek(weekId, hasLog) {
+  // Checked client-side (not just relying on the server's 409) so a blocked
+  // delete gives real feedback instead of a native disabled button that
+  // silently does nothing when clicked.
+  if (hasLog) {
+    showToast('This week still has a logged session — delete the session from the Log tab first.');
+    return;
+  }
   if (!confirm(`Delete week ${weekId}? This removes its program entirely and cannot be undone.`)) return;
   try {
     const r = await fetch(`/api/weeks/${weekId}`, { method: 'DELETE' });
     if (!r.ok) throw new Error((await r.json()).error || r.status);
     showToast('Week deleted');
-    _archiveLoaded = false;
-    renderArchive();
+    _archivedLoaded = false;
+    renderArchivedList();
   } catch (e) {
     showToast('Could not delete week: ' + e.message);
   }
 }
 
-async function loadArchivedWeek(weekId) {
+// ─────────────────────────────────────
+//  Render ARCHIVE tab (archived-only, with restore/delete)
+// ─────────────────────────────────────
+async function renderArchivedList() {
+  if (_archivedLoaded) return;
+  _archivedLoaded = true;
+
+  const el = document.getElementById('archivedContent');
+  try {
+    const index = await fetchJSON('/api/weeks');
+    const weeks = (index.weeks || [])
+      .filter(w => w.archived)
+      .sort((a, b) => _weekSortKey(a).localeCompare(_weekSortKey(b)));
+
+    if (!weeks.length) {
+      el.innerHTML = '<div class="empty-state"><div class="icon">📦</div>No archived workouts.</div>';
+      return;
+    }
+
+    const cycleTag   = { A: 'tag-push', B: 'tag-pull', C: 'tag-core' };
+    const cycleTitle = { A: 'Workout A', B: 'Workout B', C: 'Recovery' };
+
+    let html = '';
+    for (const w of weeks) {
+      const shortLabel = w.label.replace(/Phase \d+ — /, '');
+      const tagClass    = cycleTag[w.cycle] || 'tag-core';
+      html += `
+        <div class="history-item" onclick="loadWeekProgram('${w.week}', 'archived')">
+          <div class="history-item-header">
+            <span class="history-week">${w.week}</span>
+            <span class="history-date">${w.date}</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="tag ${tagClass}" style="font-size:0.58rem;padding:2px 7px">${cycleTitle[w.cycle] || w.cycle}</span>
+              <span class="history-cycle">${shortLabel}</span>
+              ${w.has_log ? '<span class="archive-done-badge">✓ Done</span>' : ''}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+              <button class="week-restore-btn" onclick="event.stopPropagation();unarchiveWeek('${w.week}')" title="Restore to Workouts">↩ Restore</button>
+              <button class="week-delete-btn" onclick="event.stopPropagation();deleteWeek('${w.week}', ${w.has_log})" title="Delete permanently">🗑</button>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    el.innerHTML = html;
+  } catch (e) {
+    el.innerHTML = `<div class="error-msg">Could not load archive: ${e.message}</div>`;
+  }
+}
+
+async function loadWeekProgram(weekId, fromTab) {
+  const containerId = fromTab === 'archived' ? 'archivedContent' : 'workoutsContent';
+  const backCall = fromTab === 'archived'
+    ? '_archivedLoaded=false;renderArchivedList();'
+    : '_workoutsLoaded=false;renderWorkouts();';
   try {
     const md = await fetchText(`/api/weeks/${weekId}/program`);
-    document.getElementById('archiveContent').innerHTML =
-      `<button onclick="_archiveLoaded=false;renderArchive();" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.78rem;margin-bottom:14px">← Back to sessions</button>
+    document.getElementById(containerId).innerHTML =
+      `<button onclick="${backCall}" style="background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:0.78rem;margin-bottom:14px">← Back</button>
        <div class="card ref-content">${mdToHtml(md)}</div>`;
   } catch (e) {
-    showToast("Could not load that session's program");
+    showToast("Could not load that week's program");
   }
 }
 

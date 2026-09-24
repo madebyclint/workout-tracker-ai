@@ -657,7 +657,9 @@ header {
   opacity: 1;
 }
 .week-delete-btn,
-.session-delete-btn {
+.session-delete-btn,
+.week-archive-btn,
+.week-restore-btn {
   flex-shrink: 0;
   background: none;
   border: 1px solid var(--border);
@@ -667,15 +669,13 @@ header {
   padding: 5px 9px;
   cursor: pointer;
   line-height: 1;
+  white-space: nowrap;
   transition: color 0.15s, border-color 0.15s;
 }
 .week-delete-btn:hover,
 .session-delete-btn:hover { color: var(--red); border-color: var(--red); }
-.week-delete-btn:disabled {
-  color: var(--text2);
-  opacity: 0.35;
-  cursor: default;
-}
+.week-archive-btn:hover { color: var(--accent); border-color: var(--accent); }
+.week-restore-btn:hover { color: var(--green); border-color: var(--green); }
 
 /* ─── Session history mini bar chart ─── */
 .session-mini-bars {
