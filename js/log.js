@@ -585,12 +585,15 @@ async function renderWorkouts() {
 
     const currentWeek = _manifest?.currentWeek;
 
-    // Suggested next: first unlogged session after the last logged one
+    // Suggested next: first unlogged week after the last logged one. If
+    // every week through the end of the list is already logged, recycle
+    // back to the first week instead of showing no suggestion at all.
     let lastLoggedIdx = -1;
     for (let i = 0; i < weeks.length; i++) if (weeks[i].has_log) lastLoggedIdx = i;
-    const suggestedWeek = lastLoggedIdx >= 0
+    let suggestedWeek = lastLoggedIdx >= 0
       ? weeks.slice(lastLoggedIdx + 1).find(w => !w.has_log)
       : weeks.find(w => !w.has_log);
+    if (!suggestedWeek) suggestedWeek = weeks[0];
 
     const cycleTag   = { A: 'tag-push', B: 'tag-pull', C: 'tag-core' };
     const cycleTitle = { A: 'Workout A', B: 'Workout B', C: 'Recovery' };
