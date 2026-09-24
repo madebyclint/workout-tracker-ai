@@ -14,24 +14,24 @@ const { z } = require('zod');
 // Claude has the training-philosophy background without that tab existing.
 const CYCLE_PROFILES = {
   A: {
-    title: 'Upper Push + Core',
-    focus: 'Horizontal Push · Shoulder Health · Triceps · Core',
-    description: 'Upper body push day. Emphasis on chest, shoulders, and triceps. Antagonist to pulling/climbing. Prioritizes shoulder health.',
+    title: 'Push + Core',
+    focus: 'Horizontal/Vertical Push · Shoulders · Rotational + Flexion Core',
+    description: 'Upper body push day. Chest, shoulder, and triceps supersets paired with rotational/flexion core work.',
   },
   B: {
-    title: 'Lower + Pull + Glutes',
-    focus: 'Squat Pattern · Vertical Pull · Glute Emphasis · Rear Delts',
-    description: 'Lower body and pull day. Full-body with emphasis on glutes and lat width. Face pulls for shoulder longevity.',
+    title: 'Pull + Core',
+    focus: 'Horizontal/Vertical Pull · Rear Delts · Anti-Rotation + Balance Core',
+    description: 'Upper body pull day. Lat/back and rear-delt supersets paired with anti-rotation and balance core work.',
   },
   C: {
-    title: 'Unilateral + Hinge + Press',
-    focus: 'Single-Leg Stability · Hamstrings · Upper Chest · Lats · Core',
-    description: 'Unilateral/single-limb work to expose and correct left/right imbalances. Critical for injury prevention.',
+    title: 'Legs + Core',
+    focus: 'Quads · Unilateral Stability · Glutes · Lateral/Hollow Core',
+    description: 'Lower body day. Quad- and glute-focused supersets with single-leg stability work, paired with lateral/hollow core.',
   },
   D: {
-    title: 'Power + Carry + Conditioning',
-    focus: 'Explosive Power · Full-Body Integration · Athletic Conditioning',
-    description: 'Most metabolically demanding week. Compound/explosive movements, loaded carries, high calorie burn. Closes the 4-week cycle.',
+    title: 'Full Body / Fun + Core',
+    focus: 'Full-Body Integration · Carries · Anti-Rotation Core',
+    description: 'Full-body circuit day mixing squat, carry, and pull patterns for conditioning, paired with anti-rotation core.',
   },
 };
 

@@ -217,6 +217,36 @@ app.get('/api/exercises', async (req, res) => {
 });
 
 // ─────────────────────────────────────
+//  API: All logged sessions in one query — used by the Log tab instead of
+//  fetching each week's log one at a time (was N+1 sequential round trips,
+//  the main source of the tab's slow load).
+// ─────────────────────────────────────
+app.get('/api/sessions', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT sl.week, w.date, w.cycle, w.label, sl.saved_at, sl.notes, sl.exercises, sl.exercise_ids
+      FROM session_logs sl
+      JOIN weeks w ON w.week = sl.week
+      ORDER BY w.date DESC
+    `);
+    res.json({
+      sessions: result.rows.map(r => ({
+        week: r.week,
+        date: r.date,
+        cycle: r.cycle,
+        label: r.label,
+        savedAt: r.saved_at,
+        notes: r.notes,
+        exercises: r.exercises,
+        exerciseIds: r.exercise_ids || {},
+      })),
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────
 //  API: Get log for a week
 // ─────────────────────────────────────
 app.get('/api/weeks/:week/log', async (req, res) => {

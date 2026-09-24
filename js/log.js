@@ -275,24 +275,27 @@ async function renderLog() {
   const el = document.getElementById('logContent');
   _allLogSessions = [];
 
-  // Collect sessions from all log files (most-recent first)
+  // Collect sessions from all log files (most-recent first) — one query
+  // instead of one request per week, which was the tab's main slowdown.
   const seen = new Set();
   try {
-    const index = await fetchJSON('/api/weeks');
-    const weeks = [...(index.weeks || [])].reverse();
-    for (const w of weeks) {
-      try {
-        const logFile = await fetchJSON(`/api/weeks/${w.week}/log`);
-        if (logFile.session?.exercises && Object.values(logFile.session.exercises).some(v => v)) {
-          const key = logFile.session.savedAt || w.week;
-          if (!seen.has(key)) {
-            seen.add(key);
-            _allLogSessions.push({ ...logFile.session, _week: w });
-          }
+    const { sessions } = await fetchJSON('/api/sessions');
+    for (const s of sessions || []) {
+      if (s.exercises && Object.values(s.exercises).some(v => v)) {
+        const key = s.savedAt || s.week;
+        if (!seen.has(key)) {
+          seen.add(key);
+          _allLogSessions.push({
+            exercises: s.exercises,
+            exerciseIds: s.exerciseIds,
+            notes: s.notes,
+            savedAt: s.savedAt,
+            _week: { week: s.week, date: s.date, cycle: s.cycle, label: s.label },
+          });
         }
-      } catch (e) { /* skip */ }
+      }
     }
-  } catch (e) { /* no index */ }
+  } catch (e) { /* no sessions */ }
 
   // Also include URL session if it has data not already in a log file
   const urlHasData = Object.values(_sessionState.exercises || {}).some(v => v);
